@@ -27,7 +27,7 @@ actual open class SkiaLayer  {
         TODO("unimplemented")
     }
 
-    internal actual fun draw(canvas: Canvas) {
+    actual fun draw(canvas: Canvas) {
         TODO("unimplemented")
     }
 

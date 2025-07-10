@@ -162,7 +162,7 @@ actual open class SkiaLayer {
         this.picture = PictureHolder(picture, pictureWidth.toInt(), pictureHeight.toInt())
     }
 
-    internal actual fun draw(canvas: Canvas) {
+    actual fun draw(canvas: Canvas) {
         picture?.also {
             canvas.drawPicture(it.instance)
         }

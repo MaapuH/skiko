@@ -58,7 +58,7 @@ actual open class SkiaLayer {
 
     actual var renderDelegate: SkikoRenderDelegate? = null
 
-    internal actual fun draw(canvas: Canvas) {
+    actual fun draw(canvas: Canvas) {
         throw UnsupportedOperationException("Don't call it, artifact of wrong abstraction")
     }
 

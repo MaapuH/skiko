@@ -62,7 +62,7 @@ expect open class SkiaLayer {
     /**
      * Drawing function.
      */
-    internal fun draw(canvas: Canvas)
+    fun draw(canvas: Canvas)
 }
 
 

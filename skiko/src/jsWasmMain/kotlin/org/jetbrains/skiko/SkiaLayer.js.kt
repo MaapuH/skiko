@@ -90,7 +90,7 @@ actual open class SkiaLayer {
         }
     }
 
-    internal actual fun draw(canvas: Canvas) {
+    actual fun draw(canvas: Canvas) {
         renderDelegate?.onRender(canvas, state!!.width, state!!.height, currentNanoTime())
     }
 
