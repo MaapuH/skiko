@@ -1,7 +1,10 @@
 package org.jetbrains.skiko.swing
 
 import org.jetbrains.skia.Canvas
+import org.jetbrains.skia.DirectContext
 import org.jetbrains.skiko.*
+import org.jetbrains.skiko.backend.BackendInfo
+import org.jetbrains.skiko.context.RenderScope
 import org.jetbrains.skiko.redrawer.RedrawerManager
 import java.awt.Component
 import java.awt.Graphics
@@ -29,7 +32,7 @@ open class SkiaSwingLayer(
     analytics: SkiaLayerAnalytics = SkiaLayerAnalytics.Empty,
     externalAccessibleFactory: ((Component) -> Accessible)? = null,
     private val properties: SkiaLayerProperties = SkiaLayerProperties()
-) : JPanel() {
+) : JPanel(), DesktopSkiaLayer {
     internal companion object {
         init {
             Library.load()
@@ -53,6 +56,13 @@ open class SkiaSwingLayer(
             renderDelegate.onRender(canvas, width, height, nanoTime)
         }
     }
+
+    private val renderScope = object : RenderScope {
+        override val directContext: DirectContext? get() = redrawer!!.directContext
+        override val backendInfo: BackendInfo get() = redrawer!!.backendInfo
+    }
+
+    override fun <T> withRenderInfo(block: RenderScope.() -> T): T = renderScope.block()
 
     private val swingLayerProperties = object : SwingLayerProperties {
         override val width: Int

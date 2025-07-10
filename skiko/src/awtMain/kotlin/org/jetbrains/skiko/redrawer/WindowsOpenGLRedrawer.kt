@@ -1,7 +1,11 @@
 package org.jetbrains.skiko.redrawer
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
+import org.jetbrains.skia.DirectContext
 import org.jetbrains.skiko.*
+import org.jetbrains.skiko.backend.BackendInfo
+import org.jetbrains.skiko.backend.DeviceInfo
 import org.jetbrains.skiko.context.OpenGLContextHandler
 
 internal class WindowsOpenGLRedrawer(
@@ -15,6 +19,26 @@ internal class WindowsOpenGLRedrawer(
 
     private val contextHandler = OpenGLContextHandler(layer)
     override val renderInfo: String get() = contextHandler.rendererInfo()
+
+    override val backendInfo: BackendInfo
+        get() {
+            return try {
+                makeCurrent()
+                BackendInfo.OpenGL(
+                    context,
+                    DeviceInfo.WindowsOpenGL(
+                        device,
+                        adapterName ?: "",
+                        OpenGLApi.instance.glGetIntegerv(OpenGLApi.instance.GL_TOTAL_MEMORY) / 1024
+                    )
+                )
+            } finally {
+                makeCurrentNull()
+            }
+        }
+
+    override val directContext: DirectContext?
+        get() = contextHandler.context ?: directContextNotInitializedError()
 
     private val device: Long = layer.backedLayer.useDrawingSurfacePlatformInfo {
         getDevice(it).also { devicePtr ->
@@ -125,15 +149,24 @@ internal class WindowsOpenGLRedrawer(
                 }
             }
 
+            // Disable context on this thread after we are done with gl rendering
+            // This is needed when user wants to share gl context,
+            // implementations may require the shared context to not be current on any thread
+            // Since we called glFinish already, this should not have any noticeable overhead
+            // (glMakeCurrent calls glFlush implicitly)
+            makeCurrentNull()
+
             // Without clearing we will have a memory leak
             toRedrawCopy.clear()
         }
     }
 }
 
+private fun makeCurrentNull() = makeCurrent(0, 0)
+
 private external fun makeCurrent(device: Long, context: Long)
 private external fun getDevice(platformInfo: Long): Long
-private external fun createContext(device: Long, contentHandle:Long, transparency: Boolean): Long
+private external fun createContext(device: Long, contentHandle: Long, transparency: Boolean): Long
 private external fun deleteContext(context: Long)
 private external fun setSwapInterval(interval: Int)
 private external fun swapBuffers(device: Long)

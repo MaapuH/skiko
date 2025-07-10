@@ -208,6 +208,13 @@ namespace skija {
         void writeImageInfoForInterop(JNIEnv* env, SkImageInfo imageInfo, jintArray imageInfoResult, jlongArray colorSpaceResultPtr);
     }
 
+//    namespace GLTextureInfo {
+//        extern jclass cls;
+//        void onLoad(JNIEnv* env);
+//        void onUnload(JNIEnv* env);
+//        void writeGLTextureInfoForInterop(JNIEnv* env, GrGLTextureInfo textureInfo, jintArray textureInfoResult);
+//    }
+//
     namespace IPoint {
         extern jclass cls;
         extern jmethodID ctor;

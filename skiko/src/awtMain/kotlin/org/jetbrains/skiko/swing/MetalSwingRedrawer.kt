@@ -2,6 +2,7 @@ package org.jetbrains.skiko.swing
 
 import org.jetbrains.skia.*
 import org.jetbrains.skiko.*
+import org.jetbrains.skiko.backend.BackendInfo
 import java.awt.Graphics2D
 
 /**
@@ -38,6 +39,11 @@ internal class MetalSwingRedrawer(
         onDeviceChosen(it.name)
     }
     private val context: DirectContext = makeMetalContext()
+    override val backendInfo: BackendInfo
+        get() = TODO("Not yet implemented")
+
+    override val directContext: DirectContext?
+        get() = context
 
     private var texturePtr: Long = 0
 
@@ -57,23 +63,24 @@ internal class MetalSwingRedrawer(
 
     override fun onRender(g: Graphics2D, width: Int, height: Int, nanoTime: Long) {
         autoreleasepool {
-            autoCloseScope {
-                texturePtr = makeMetalTexture(adapter.ptr, texturePtr, width, height)
-                val renderTarget = makeRenderTarget().autoClose()
-                val surface = Surface.makeFromBackendRenderTarget(
-                    context,
-                    renderTarget,
-                    SurfaceOrigin.TOP_LEFT,
-                    SurfaceColorFormat.BGRA_8888,
-                    ColorSpace.sRGB,
-                    SurfaceProps(pixelGeometry = PixelGeometry.UNKNOWN)
-                )?.autoClose() ?: throw RenderException("Cannot create surface")
+            texturePtr = makeMetalTexture(adapter.ptr, texturePtr, width, height)
+            val renderTarget = makeRenderTarget()
+            val surface = Surface.makeFromBackendRenderTarget(
+                context,
+                renderTarget,
+                SurfaceOrigin.TOP_LEFT,
+                SurfaceColorFormat.BGRA_8888,
+                ColorSpace.sRGB,
+                SurfaceProps(pixelGeometry = PixelGeometry.UNKNOWN)
+            ) ?: throw RenderException("Cannot create surface")
 
-                val canvas = surface.canvas
-                canvas.clear(Color.TRANSPARENT)
-                renderDelegate.onRender(canvas, width, height, nanoTime)
-                flush(surface, g)
-            }
+            val canvas = surface.canvas
+            canvas.clear(Color.TRANSPARENT)
+            renderDelegate.onRender(canvas, width, height, nanoTime)
+            flush(surface, g)
+
+            surface.close()
+            renderTarget.close()
         }
     }
 

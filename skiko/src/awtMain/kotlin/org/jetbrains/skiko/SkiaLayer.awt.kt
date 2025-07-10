@@ -4,6 +4,8 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.jetbrains.skia.*
+import org.jetbrains.skiko.backend.BackendInfo
+import org.jetbrains.skiko.context.RenderScope
 import org.jetbrains.skiko.redrawer.Redrawer
 import org.jetbrains.skiko.redrawer.RedrawerManager
 import java.awt.Color
@@ -29,7 +31,7 @@ actual open class SkiaLayer internal constructor(
     private val renderFactory: RenderFactory = RenderFactory.Default,
     private val analytics: SkiaLayerAnalytics = SkiaLayerAnalytics.Empty,
     actual val pixelGeometry: PixelGeometry = PixelGeometry.UNKNOWN,
-) : JPanel() {
+) : JPanel(), DesktopSkiaLayer {
 
     internal companion object {
         init {
@@ -41,6 +43,16 @@ actual open class SkiaLayer internal constructor(
         Renderer,
         ContentScale,
     }
+
+    private val renderScope = object: RenderScope {
+        override val directContext: DirectContext? get() = redrawer!!.let {
+            (it as DesktopRedrawer).directContext
+        }
+        override val backendInfo: BackendInfo get() = redrawer!!.let {
+            (it as DesktopRedrawer).backendInfo
+        }
+    }
+    override fun <T> withRenderInfo(block: RenderScope.() -> T): T = renderScope.block()
 
     private var _transparency: Boolean = false
     actual var transparency: Boolean
@@ -64,6 +76,7 @@ actual open class SkiaLayer internal constructor(
         renderApi: GraphicsApi = SkikoProperties.renderApi,
         analytics: SkiaLayerAnalytics = SkiaLayerAnalytics.Empty,
         pixelGeometry: PixelGeometry = PixelGeometry.UNKNOWN,
+        renderFactory: RenderFactory = RenderFactory.Default
     ) : this(
         externalAccessibleFactory,
         SkiaLayerProperties(
@@ -72,7 +85,7 @@ actual open class SkiaLayer internal constructor(
             frameBuffering,
             renderApi
         ),
-        RenderFactory.Default,
+        renderFactory,
         analytics,
         pixelGeometry
     )
@@ -82,10 +95,11 @@ actual open class SkiaLayer internal constructor(
         properties: SkiaLayerProperties,
         analytics: SkiaLayerAnalytics = SkiaLayerAnalytics.Empty,
         pixelGeometry: PixelGeometry = PixelGeometry.UNKNOWN,
+        renderFactory: RenderFactory = RenderFactory.Default
     ) : this(
         externalAccessibleFactory,
         properties,
-        RenderFactory.Default,
+        renderFactory,
         analytics,
         pixelGeometry
     )
@@ -699,4 +713,17 @@ private fun adjustSizeToContentScale(contentScale: Float, value: Int): Int {
     } else {
         value
     }
+}
+
+fun SkiaLayer.allowsTransparentBackground(): Boolean {
+    if (hostOs == OS.MacOS) {
+        // MacOS transparency is always supported
+        return true
+    }
+    if (fullscreen) {
+        // for non-MacOS in fullscreen transparency is not supported
+        return false
+    }
+    // for non-MacOS in non-fullscreen transparency provided by [SkiaLayer]
+    return transparency
 }

@@ -2,6 +2,7 @@ package org.jetbrains.skiko.swing
 
 import org.jetbrains.skia.*
 import org.jetbrains.skiko.*
+import org.jetbrains.skiko.backend.BackendInfo
 import java.awt.Graphics2D
 
 internal class LinuxOpenGLSwingRedrawer(
@@ -32,6 +33,12 @@ internal class LinuxOpenGLSwingRedrawer(
         onContextInit()
     }
 
+    override val backendInfo: BackendInfo
+        get() = TODO("Not yet implemented")
+
+    override val directContext: DirectContext?
+        get() = TODO("Not yet implemented")
+
     override fun dispose() {
         bytesToDraw = ByteArray(0)
         storage.close()
@@ -48,39 +55,41 @@ internal class LinuxOpenGLSwingRedrawer(
         }
         startRendering(offScreenContextPtr, offScreenBufferPtr)
         try {
-            autoCloseScope {
-                // TODO: reuse texture
-                val texturePtr = createAndBindTexture(width, height)
-                if (texturePtr == 0L) {
-                    throw RenderException("Cannot create offScreen OpenGL texture")
-                }
-                val fbId = getFboId(texturePtr)
-                val renderTarget = makeGLRenderTarget(
-                    width,
-                    height,
-                    0,
-                    8,
-                    fbId,
-                    FramebufferFormat.GR_GL_RGBA8
-                ).autoClose()
-
-                // TODO: may be it is possible to reuse [makeGLContext]
-                val directContext = makeGLContext().autoClose()
-                val surface = Surface.makeFromBackendRenderTarget(
-                    directContext,
-                    renderTarget,
-                    SurfaceOrigin.TOP_LEFT,
-                    SurfaceColorFormat.BGRA_8888,
-                    ColorSpace.sRGB,
-                    SurfaceProps(pixelGeometry = PixelGeometry.UNKNOWN)
-                )?.autoClose() ?: throw RenderException("Cannot create surface")
-
-                val canvas = surface.canvas
-                canvas.clear(Color.TRANSPARENT)
-                renderDelegate.onRender(canvas, width, height, nanoTime)
-                flush(surface, g)
-                unbindAndDisposeTexture(texturePtr)
+            // TODO: reuse texture
+            val texturePtr = createAndBindTexture(width, height)
+            if (texturePtr == 0L) {
+                throw RenderException("Cannot create offScreen OpenGL texture")
             }
+            val fbId = getFboId(texturePtr)
+            val renderTarget = makeGLRenderTarget(
+                width,
+                height,
+                0,
+                8,
+                fbId,
+                FramebufferFormat.GR_GL_RGBA8
+            )
+
+            // TODO: may be it is possible to reuse [makeGLContext]
+            val directContext = makeGLContext()
+            val surface = Surface.makeFromBackendRenderTarget(
+                directContext,
+                renderTarget,
+                SurfaceOrigin.TOP_LEFT,
+                SurfaceColorFormat.BGRA_8888,
+                ColorSpace.sRGB,
+                SurfaceProps(pixelGeometry = PixelGeometry.UNKNOWN)
+            ) ?: throw RenderException("Cannot create surface")
+
+            val canvas = surface.canvas
+            canvas.clear(Color.TRANSPARENT)
+            renderDelegate.onRender(canvas, width, height, nanoTime)
+            flush(surface, g)
+            unbindAndDisposeTexture(texturePtr)
+
+            surface.close()
+            renderTarget.close()
+            directContext.close()
         } finally {
             finishRendering(offScreenContextPtr)
         }

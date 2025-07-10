@@ -147,7 +147,7 @@ object SkikoProperties {
         }
 
         val indexOfInitialApi = fallbackApis.indexOf(initialApi)
-        require(indexOfInitialApi >= 0) {
+        require(indexOfInitialApi != -1) {
             "$hostOs does not support $initialApi rendering API."
         }
         fallbackApis = fallbackApis.drop(indexOfInitialApi + 1)

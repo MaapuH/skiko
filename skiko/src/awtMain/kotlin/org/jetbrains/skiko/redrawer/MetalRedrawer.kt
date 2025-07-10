@@ -1,8 +1,12 @@
 package org.jetbrains.skiko.redrawer
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import org.jetbrains.skia.DirectContext
 import org.jetbrains.skiko.*
+import org.jetbrains.skiko.backend.BackendInfo
 import org.jetbrains.skiko.context.MetalContextHandler
 import javax.swing.SwingUtilities.*
 
@@ -37,6 +41,11 @@ internal class MetalRedrawer(
     private val properties: SkiaLayerProperties
 ) : AWTRedrawer(layer, analytics, GraphicsApi.METAL) {
     private val contextHandler: MetalContextHandler
+    override val backendInfo: BackendInfo
+        get() = TODO("Not yet implemented")
+
+    override val directContext: DirectContext?
+        get() = contextHandler.context ?: directContextNotInitializedError()
 
     companion object {
         init {

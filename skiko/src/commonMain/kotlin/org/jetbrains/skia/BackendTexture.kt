@@ -2,6 +2,8 @@ package org.jetbrains.skia
 
 import org.jetbrains.skia.impl.*
 import org.jetbrains.skia.impl.Library.Companion.staticLoad
+import org.jetbrains.skia.impl.getPtr
+import org.jetbrains.skia.impl.reachabilityBarrier
 
 class BackendTexture internal constructor(ptr: NativePointer) : Managed(ptr, _FinalizerHolder.PTR) {
     companion object {
@@ -53,6 +55,26 @@ class BackendTexture internal constructor(ptr: NativePointer) : Managed(ptr, _Fi
             reachabilityBarrier(this)
         }
     }
+//    val backend: GraphicsApi get() = TODO()
+//
+//    /**
+//     * @return If the [backend] API is [GraphicsApi.OPENGL], returns [GLTextureInfo].
+//     * Otherwise, returns null if the [backend] API is not [GraphicsApi.OPENGL].
+//     */
+//    fun getGLTextureInfo(): GLTextureInfo? {
+//        return try {
+//            var result: GLTextureInfo? = null
+//            commonSynchronized(this) {
+//                result = GLTextureInfo.createUsing(
+//                    getPtr(this),
+//                    _nGetGLTextureInfo = ::_nGetGLTextureInfo
+//                )
+//            }
+//            result
+//        } finally {
+//            reachabilityBarrier(this)
+//        }
+//    }
 
     private object _FinalizerHolder {
         val PTR = BackendTexture_nGetFinalizer()
@@ -77,3 +99,7 @@ private external fun _nMakeGL(
 @ExternalSymbolName("org_jetbrains_skia_BackendTexture__1nGLTextureParametersModified")
 @ModuleImport("./skiko.mjs", "org_jetbrains_skia_BackendTexture__1nGLTextureParametersModified")
 private external fun _nGLTextureParametersModified(backendTexturePtr: NativePointer)
+//
+//@ExternalSymbolName("org_jetbrains_skia_BackendTexture__1nGetGLTextureInfo")
+//@ModuleImport("./skiko.mjs", "org_jetbrains_skia_BackendTexture__1nGetGLTextureInfo")
+//private external fun _nGetGLTextureInfo(backendTexturePtr: NativePointer, textureInfoResult: InteropPointer): Boolean

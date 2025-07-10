@@ -43,3 +43,17 @@ extern "C" JNIEXPORT void JNICALL Java_org_jetbrains_skia_BackendTextureKt__1nGL
     GrBackendTexture* backendTexture = reinterpret_cast<GrBackendTexture*>(static_cast<uintptr_t>(backendTexturePtr));
     GrBackendTextures::GLTextureParametersModified(backendTexture);
 }
+
+//
+//extern "C" JNIEXPORT jboolean JNICALL Java_org_jetbrains_skia_BackendTextureKt__1nGetGLTextureInfo
+//  (JNIEnv* env, jclass jclass, jlong backendTexturePtr, jintArray textureInfoResult) {
+//    GrBackendTexture* backendTexture = reinterpret_cast<GrBackendTexture*>(static_cast<uintptr_t>(backendTexturePtr));
+//    GrGLTextureInfo textureInfo;
+//    jboolean result = GrBackendTextures::GetGLTextureInfo(*backendTexture, textureInfo);
+//    if(result) {
+//        skija::GLTextureInfo::writeGLTextureInfoForInterop(
+//            env, textureInfo,textureInfoResult
+//        );
+//    }
+//    return result;
+//}

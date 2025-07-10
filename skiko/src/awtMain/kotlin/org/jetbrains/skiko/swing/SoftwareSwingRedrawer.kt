@@ -4,7 +4,7 @@ import org.jetbrains.skia.*
 import org.jetbrains.skiko.GraphicsApi
 import org.jetbrains.skiko.SkiaLayerAnalytics
 import org.jetbrains.skiko.SkikoRenderDelegate
-import org.jetbrains.skiko.autoCloseScope
+import org.jetbrains.skiko.backend.BackendInfo
 import java.awt.Graphics2D
 
 /**
@@ -29,6 +29,8 @@ internal class SoftwareSwingRedrawer(
     }
 
     private val painter: SwingPainter = SoftwareSwingPainter(swingLayerProperties)
+    override val backendInfo: BackendInfo = BackendInfo.SoftwareFast
+    override val directContext: DirectContext? = null
 
     private val storage = Bitmap()
 
@@ -42,7 +44,7 @@ internal class SoftwareSwingRedrawer(
         painter.dispose()
     }
 
-    override fun onRender(g: Graphics2D, width: Int, height: Int, nanoTime: Long) = autoCloseScope {
+    override fun onRender(g: Graphics2D, width: Int, height: Int, nanoTime: Long) {
         if (storage.width != width || storage.height != height) {
             storage.allocPixelsFlags(ImageInfo.makeS32(width, height, ColorAlphaType.PREMUL), false)
         }
@@ -52,15 +54,16 @@ internal class SoftwareSwingRedrawer(
             imageInfo = storage.imageInfo,
             pixelsPtr = pixelsPointer,
             rowBytes = storage.rowBytes
-        ).autoClose()
+        )
 
         surface.canvas.clear(Color.TRANSPARENT)
         renderDelegate.onRender(surface.canvas, width, height, nanoTime)
 
         flush(g, surface)
+        surface.close()
     }
 
-    private fun flush(g: Graphics2D, surface: Surface) = autoCloseScope() {
+    private fun flush(g: Graphics2D, surface: Surface) {
         painter.paint(g, surface, 0)
     }
 }

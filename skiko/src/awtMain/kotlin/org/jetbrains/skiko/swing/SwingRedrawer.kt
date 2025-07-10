@@ -1,6 +1,7 @@
 package org.jetbrains.skiko.swing
 
 import org.jetbrains.skiko.*
+import org.jetbrains.skiko.DesktopRedrawer
 import java.awt.Graphics2D
 
 /**
@@ -8,7 +9,7 @@ import java.awt.Graphics2D
  *
  * See [org.jetbrains.skiko.redrawer.Redrawer] redrawer for on-screen rendering
  */
-internal interface SwingRedrawer {
+internal interface SwingRedrawer: DesktopRedrawer {
     /**
      * Should be called when [SwingRedrawer] no longer needed to free native resources
      */

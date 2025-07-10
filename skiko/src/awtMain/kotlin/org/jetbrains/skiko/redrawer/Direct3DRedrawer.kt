@@ -7,6 +7,7 @@ import org.jetbrains.skia.SurfaceProps
 import org.jetbrains.skia.impl.InteropPointer
 import org.jetbrains.skia.impl.interopScope
 import org.jetbrains.skiko.*
+import org.jetbrains.skiko.backend.BackendInfo
 import org.jetbrains.skiko.context.Direct3DContextHandler
 
 internal class Direct3DRedrawer(
@@ -17,6 +18,10 @@ internal class Direct3DRedrawer(
 
     private val contextHandler = Direct3DContextHandler(layer)
     override val renderInfo: String get() = contextHandler.rendererInfo()
+
+    override val backendInfo: BackendInfo get() = TODO("Not yet implemented")
+    override val directContext: DirectContext?
+        get() = contextHandler.context ?: directContextNotInitializedError()
 
     private var drawLock = Any()
     private var isSwapChainInitialized = false

@@ -1,6 +1,6 @@
 package org.jetbrains.skiko.redrawer
 
-internal interface Redrawer {
+interface Redrawer {
     fun dispose()
     fun needRedraw()
     fun redrawImmediately()

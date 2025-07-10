@@ -1,7 +1,12 @@
 package org.jetbrains.skiko.redrawer
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import org.jetbrains.skia.DirectContext
 import org.jetbrains.skiko.*
+import org.jetbrains.skiko.backend.BackendInfo
+import org.jetbrains.skiko.backend.DeviceInfo
 import org.jetbrains.skiko.context.OpenGLContextHandler
 
 internal class LinuxOpenGLRedrawer(
@@ -20,7 +25,7 @@ internal class LinuxOpenGLRedrawer(
     private val swapInterval = if (properties.isVsyncEnabled) 1 else 0
 
     init {
-    	layer.backedLayer.lockLinuxDrawingSurface {
+        layer.backedLayer.lockLinuxDrawingSurface {
             context = it.createContext(layer.transparency)
             if (context == 0L) {
                 throw RenderException("Cannot create Linux GL context")
@@ -37,9 +42,34 @@ internal class LinuxOpenGLRedrawer(
         onContextInit()
     }
 
+    override val backendInfo: BackendInfo
+        get() {
+            if (context == 0L) backendInfoIsNotInitializedError()
+            val drawingSurface = lockLinuxDrawingSurface(layer.backedLayer)
+            return try {
+                drawingSurface.makeCurrent(context)
+                BackendInfo.OpenGL(
+                    context,
+                    DeviceInfo.LinuxOpenGL(
+                        drawingSurface.display,
+                        drawingSurface.window,
+                        adapterName ?: "",
+                        OpenGLApi.instance.glGetIntegerv(OpenGLApi.instance.GL_TOTAL_MEMORY) / 1024
+                    )
+                )
+            } finally {
+                unlockLinuxDrawingSurface(drawingSurface)
+                makeCurrentNull()
+            }
+        }
+
+    override val directContext: DirectContext?
+        get() = contextHandler.context ?: directContextNotInitializedError()
+
     private val adapterName get() = OpenGLApi.instance.glGetString(OpenGLApi.instance.GL_RENDERER)
 
     private val frameJob = Job()
+
     @Volatile
     private var frameLimit = 0.0
     private val frameLimiter = layerFrameLimiter(
@@ -158,6 +188,13 @@ internal class LinuxOpenGLRedrawer(
                 }
             } finally {
                 drawingSurfaces.values.forEach(::unlockLinuxDrawingSurface)
+
+                // Disable context on this thread after we are done with gl rendering
+                // This is needed when user wants to share gl context,
+                // implementations may require the shared context to not be current on any thread
+                // Since we called glFinish already, this should not have any noticeable overhead
+                // (glMakeCurrent calls glFlush implicitly)
+                makeCurrentNull()
             }
 
             // Without clearing we will have a memory leak
@@ -169,6 +206,7 @@ internal class LinuxOpenGLRedrawer(
 private fun LinuxDrawingSurface.createContext(transparency: Boolean) = createContext(display, transparency)
 private fun LinuxDrawingSurface.destroyContext(context: Long) = destroyContext(display, context)
 private fun LinuxDrawingSurface.makeCurrent(context: Long) = makeCurrent(display, window, context)
+private fun makeCurrentNull() = makeCurrent(0, 0, 0)
 private fun LinuxDrawingSurface.swapBuffers() = swapBuffers(display, window)
 private fun LinuxDrawingSurface.setSwapInterval(interval: Int) = setSwapInterval(display, window, interval)
 

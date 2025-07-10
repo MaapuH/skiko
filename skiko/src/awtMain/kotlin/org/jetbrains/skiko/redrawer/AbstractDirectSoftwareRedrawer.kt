@@ -1,9 +1,11 @@
 package org.jetbrains.skiko.redrawer
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import org.jetbrains.skia.DirectContext
 import org.jetbrains.skia.Surface
-import kotlinx.coroutines.*
 import org.jetbrains.skiko.*
-import org.jetbrains.skiko.layerFrameLimiter
+import org.jetbrains.skiko.backend.BackendInfo
 import org.jetbrains.skiko.context.DirectSoftwareContextHandler
 
 internal abstract class AbstractDirectSoftwareRedrawer(
@@ -26,6 +28,8 @@ internal abstract class AbstractDirectSoftwareRedrawer(
             draw()
         }
     }
+    override val backendInfo: BackendInfo = BackendInfo.SoftwareFast
+    override val directContext: DirectContext? = null
 
     protected var device = 0L
 

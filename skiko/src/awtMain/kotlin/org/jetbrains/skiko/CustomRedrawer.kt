@@ -1,22 +1,18 @@
-package org.jetbrains.skiko.redrawer
+package org.jetbrains.skiko
 
-import org.jetbrains.skiko.*
 import org.jetbrains.skiko.SkiaLayerAnalytics.DeviceAnalytics
+import org.jetbrains.skiko.redrawer.Redrawer
 
-/**
- * Common class for all AWT redrawers.
- * Don't forget to call [onDeviceChosen] and [onContextInit] to send necessary analytics.
- */
 @OptIn(ExperimentalSkikoApi::class)
-internal abstract class AWTRedrawer(
-    private val layer: SkiaLayer,
-    private val analytics: SkiaLayerAnalytics,
-    private val graphicsApi: GraphicsApi,
+abstract class CustomRedrawer(
+    protected val layer: SkiaLayer,
+    protected val analytics: SkiaLayerAnalytics,
+    protected val graphicsApi: GraphicsApi,
 ) : Redrawer, DesktopRedrawer {
-    private var isFirstFrameRendered = false
+    protected var isFirstFrameRendered = false
 
-    private val rendererAnalytics = analytics.renderer(Version.skiko, hostOs, graphicsApi)
-    private var deviceAnalytics: DeviceAnalytics? = null
+    protected val rendererAnalytics = analytics.renderer(Version.skiko, hostOs, graphicsApi)
+    protected var deviceAnalytics: DeviceAnalytics? = null
     protected var isDisposed = false
         private set
 
@@ -54,7 +50,7 @@ internal abstract class AWTRedrawer(
         layer.update(nanoTime)
     }
 
-    protected inline fun inDrawScope(body: () -> Unit) {
+    protected fun inDrawScope(body: () -> Unit) {
         requireNotNull(deviceAnalytics) { "deviceAnalytics is not null. Call onDeviceChosen after choosing the drawing device" }
         if (!isDisposed) {
             if (!isFirstFrameRendered) {

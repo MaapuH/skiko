@@ -28,7 +28,7 @@ class DirectContext internal constructor(ptr: NativePointer) : RefCnt(ptr) {
          *
          * @param adapterPtr    pointer to IDXGIAdapter1 object; must be not zero
          * @param devicePtr     pointer to ID3D12Device object, which is created with
-         * provided adapter in adapterPtr; must be not zero
+         * provided adapter in [adapterPtr]; must be not zero
          * @param queuePtr      Pointer to ID3D12CommandQueue object, which
          * is created with provided device in devicePtr with
          * type D3D12_COMMAND_LIST_TYPE_DIRECT; must be not zero
@@ -42,6 +42,70 @@ class DirectContext internal constructor(ptr: NativePointer) : RefCnt(ptr) {
             staticLoad()
         }
     }
+
+//
+//    /**
+//     * The explicitly allocated [BackendTexture] API allows clients
+//     * to use Skia to create backend objects outside Skia proper
+//     * (i.e., Skia's caching system will not know about them.)
+//     *
+//     * It is the client's responsibility to delete all these objects
+//     * (using [deleteBackendTexture]) before deleting the context used to create them.
+//     * If the backend is Vulkan, the textures must be deleted before [abandon]ing the context as well.
+//     * Additionally, clients should only delete these objects on the thread for which that context is active.
+//     *
+//     * The client is responsible for ensuring synchronization between different uses of the backend object
+//     * (i.e., wrapping it in a surface, rendering to it, deleting the surface,
+//     * rewrapping it in an image and drawing the image will require explicit synchronization on the client's part).
+//     *
+//     * For more information refer to skia GrDirectContext::createBackendTexture method.
+//     *
+//     * @return If possible, create an uninitialized [BackendTexture].
+//     * The client should ensure that the returned [BackendTexture] is valid.
+//     * For the Vulkan backend the layout of the created VkImage will be: VK_IMAGE_LAYOUT_UNDEFINED.
+//     *
+//     * @see deleteBackendTexture
+//     * @see submit
+//     */
+//    fun createBackendTexture(
+//        width: Int,
+//        height: Int,
+//        backendFormat: TODO,
+//        isMipmapped: Boolean,
+//        isRenderable: Boolean,
+//        isProtected: Boolean,
+//        label: String? = null
+//    ): BackendTexture
+
+//    /**
+//     * If possible, create an uninitialized [BackendTexture].
+//     *
+//     * The client should ensure that the returned [BackendTexture] is valid.
+//     *
+//     * For more information refer to skia GrDirectContext::createBackendTexture method.
+//     *
+//     * @return If successful, the created [BackendTexture] will be compatible with the provided [ColorType].
+//     * For the Vulkan backend the layout of the created [Image] will be: VK_IMAGE_LAYOUT_UNDEFINED.
+//     *
+//     * @see createBackendTexture
+//     * @see deleteBackendTexture
+//     */
+//    fun createBackendTexture(
+//        width: Int,
+//        height: Int,
+//        colorType: ColorType,
+//        isMipmapped: Boolean,
+//        isRenderable: Boolean,
+//        isProtected: Boolean,
+////        label: String? = null
+//    ): BackendTexture {
+//        ColorChannel
+//    }
+//
+//    /**
+//     * @see createBackendTexture
+//     */
+//    fun deleteBackendTexture(backendTexture: BackendTexture)
 
     fun flush(): DirectContext {
         Stats.onNativeCall()

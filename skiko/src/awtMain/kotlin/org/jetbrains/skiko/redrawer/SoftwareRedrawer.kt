@@ -1,8 +1,10 @@
 package org.jetbrains.skiko.redrawer
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import org.jetbrains.skia.DirectContext
 import org.jetbrains.skiko.*
-import org.jetbrains.skiko.layerFrameLimiter
+import org.jetbrains.skiko.backend.BackendInfo
 import org.jetbrains.skiko.context.SoftwareContextHandler
 
 internal class SoftwareRedrawer(
@@ -15,6 +17,10 @@ internal class SoftwareRedrawer(
     }
 
     private val contextHandler = SoftwareContextHandler(layer)
+    override val backendInfo: BackendInfo
+        get() = BackendInfo.SoftwareFast
+    override val directContext: DirectContext? = null
+
     override val renderInfo: String get() = contextHandler.rendererInfo()
 
     private val frameJob = Job()

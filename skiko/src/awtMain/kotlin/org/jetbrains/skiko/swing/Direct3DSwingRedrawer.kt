@@ -2,6 +2,7 @@ package org.jetbrains.skiko.swing
 
 import org.jetbrains.skia.*
 import org.jetbrains.skiko.*
+import org.jetbrains.skiko.backend.BackendInfo
 import org.jetbrains.skiko.graphicapi.InternalDirectXApi.alignedTextureWidth
 import org.jetbrains.skiko.graphicapi.InternalDirectXApi.createDirectXOffscreenDevice
 import org.jetbrains.skiko.graphicapi.InternalDirectXApi.disposeDirectXTexture
@@ -24,6 +25,12 @@ internal class Direct3DSwingRedrawer(
             Library.load()
         }
     }
+
+    override val backendInfo: BackendInfo
+        get() = TODO("Not yet implemented")
+
+    override val directContext: DirectContext?
+        get() = context
 
     private val adapter = chooseAdapter(swingLayerProperties.adapterPriority).also {
         onDeviceChosen("DirectX12") // TODO: properly get name
@@ -58,31 +65,31 @@ internal class Direct3DSwingRedrawer(
     }
 
     override fun onRender(g: Graphics2D, width: Int, height: Int, nanoTime: Long) {
-        autoCloseScope {
-            // We will have [Surface] with width == [alignedWidth],
-            // but imitate (for SkikoRenderDelegate and Swing) like it has width == [width].
-            val alignedWidth = alignedTextureWidth(width)
+        // We will have [Surface] with width == [alignedWidth],
+        // but imitate (for SkikoRenderDelegate and Swing) like it has width == [width].
+        val alignedWidth = alignedTextureWidth(width)
 
-            texturePtr = makeDirectXTexture(device, texturePtr, alignedWidth, height)
-            if (texturePtr == 0L) {
-                throw RenderException("Can't allocate DirectX resources")
-            }
-            val renderTarget = makeRenderTarget().autoClose()
-
-            val surface = Surface.makeFromBackendRenderTarget(
-                context,
-                renderTarget,
-                SurfaceOrigin.TOP_LEFT,
-                SurfaceColorFormat.BGRA_8888,
-                ColorSpace.sRGB,
-                SurfaceProps(pixelGeometry = PixelGeometry.UNKNOWN)
-            )?.autoClose() ?: throw RenderException("Cannot create surface")
-
-            val canvas = surface.canvas
-            canvas.clear(Color.TRANSPARENT)
-            renderDelegate.onRender(canvas, width, height, nanoTime)
-            flush(surface, g)
+        texturePtr = makeDirectXTexture(device, texturePtr, alignedWidth, height)
+        if (texturePtr == 0L) {
+            throw RenderException("Can't allocate DirectX resources")
         }
+        val renderTarget = makeRenderTarget()
+
+        val surface = Surface.makeFromBackendRenderTarget(
+            context,
+            renderTarget,
+            SurfaceOrigin.TOP_LEFT,
+            SurfaceColorFormat.BGRA_8888,
+            ColorSpace.sRGB,
+            SurfaceProps(pixelGeometry = PixelGeometry.UNKNOWN)
+        ) ?: throw RenderException("Cannot create surface")
+
+        val canvas = surface.canvas
+        canvas.clear(Color.TRANSPARENT)
+        renderDelegate.onRender(canvas, width, height, nanoTime)
+        flush(surface, g)
+        surface.close()
+        renderTarget.close()
     }
 
     fun flush(surface: Surface, g: Graphics2D) {

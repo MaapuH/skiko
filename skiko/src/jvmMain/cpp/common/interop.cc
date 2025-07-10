@@ -471,6 +471,28 @@ namespace skija {
         }
     }
 
+//    namespace GLTextureInfo {
+//            jclass cls;
+//
+//            void onLoad(JNIEnv* env) {
+//                jclass local = env->FindClass("org/jetbrains/skia/GLTextureInfo");
+//                cls   = static_cast<jclass>(env->NewGlobalRef(local));
+//            }
+//
+//            void onUnload(JNIEnv* env) {
+//                env->DeleteGlobalRef(cls);
+//            }
+//
+//            void writeGLTextureInfoForInterop(JNIEnv* env, GrGLTextureInfo textureInfo, jintArray textureInfoResult) {
+//                jint *result_int = env->GetIntArrayElements(textureInfoResult, NULL);
+//                result_int[0] = static_cast<int>textureInfo.fTarget();
+//                result_int[1] = textureInfo.fID();
+//                result_int[2] = static_cast<int>textureInfo.fFormat();
+//                result_int[3] = static_cast<int>textureInfo.fProtected();
+//                env->ReleaseIntArrayElements(textureInfoResult, result_int, 0);
+//            }
+//        }
+//
     namespace IPoint {
         jclass    cls;
         jmethodID ctor;

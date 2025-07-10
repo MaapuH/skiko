@@ -7,7 +7,7 @@ internal abstract class ContextHandler(
     protected val layer: SkiaLayer,
     private val drawContent: Canvas.() -> Unit
 ) {
-    protected var context: DirectContext? = null
+    internal var context: DirectContext? = null
     protected var renderTarget: BackendRenderTarget? = null
     protected var surface: Surface? = null
     protected var canvas: Canvas? = null
