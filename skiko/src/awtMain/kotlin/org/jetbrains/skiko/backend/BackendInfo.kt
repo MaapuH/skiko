@@ -8,7 +8,7 @@ import org.jetbrains.skiko.GraphicsApi
  * @property deviceInfo returns [DeviceInfo] or null if there's no device being used,
  * for example when [graphicsApi] is Software.
  */
-interface BackendInfo {
+sealed interface BackendInfo {
     val deviceInfo: DeviceInfo?
     val graphicsApi: GraphicsApi
 

@@ -16,7 +16,10 @@ internal class MacOsMetalContextHandler(layer: SkiaLayer) : ContextHandler(layer
     override fun initContext(): Boolean {
         try {
             if (context == null) {
-                context = metalRedrawer.makeContext()
+                metalRedrawer.makeContext().let {
+//                    layer.notifyDirectContextChanged(it)
+                    context = it
+                }
             }
         } catch (e: Exception) {
             println("${e.message}\nFailed to create Skia Metal context!")

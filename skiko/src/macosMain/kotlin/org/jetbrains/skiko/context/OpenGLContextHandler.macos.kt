@@ -18,7 +18,10 @@ internal class MacOSOpenGLContextHandler(layer: SkiaLayer) : ContextHandler(laye
     override fun initContext(): Boolean {
         try {
             if (context == null) {
-                context = DirectContext.makeGL()
+                DirectContext.makeGL().let {
+//                    layer.notifyDirectContextChanged(it)
+                    context = it
+                }
             }
         } catch (e: Exception) {
             println("Failed to create Skia OpenGL context!")

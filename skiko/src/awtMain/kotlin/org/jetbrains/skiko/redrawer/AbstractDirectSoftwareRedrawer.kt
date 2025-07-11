@@ -28,8 +28,8 @@ internal abstract class AbstractDirectSoftwareRedrawer(
             draw()
         }
     }
-    override val backendInfo: BackendInfo = BackendInfo.SoftwareFast
-    override val directContext: DirectContext? = null
+    override val backendInfo: BackendInfo get() = BackendInfo.SoftwareFast.also(layer::notifyBackendInfoChanged)
+    override val directContext: DirectContext? get() = null
 
     protected var device = 0L
 

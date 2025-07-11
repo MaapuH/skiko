@@ -21,21 +21,6 @@ internal class WindowsOpenGLRedrawer(
     override val renderInfo: String get() = contextHandler.rendererInfo()
 
     override val backendInfo: BackendInfo
-        get() {
-            return try {
-                makeCurrent()
-                BackendInfo.OpenGL(
-                    context,
-                    DeviceInfo.WindowsOpenGL(
-                        device,
-                        adapterName ?: "",
-                        OpenGLApi.instance.glGetIntegerv(OpenGLApi.instance.GL_TOTAL_MEMORY) / 1024
-                    )
-                )
-            } finally {
-                makeCurrentNull()
-            }
-        }
 
     override val directContext: DirectContext?
         get() = contextHandler.context ?: directContextNotInitializedError()
@@ -56,6 +41,15 @@ internal class WindowsOpenGLRedrawer(
                 throw RenderException("Cannot create Windows GL context")
             }
         }
+        backendInfo = BackendInfo.OpenGL(
+            it,
+            DeviceInfo.WindowsOpenGL(
+                device,
+                adapterName ?: "",
+                OpenGLApi.instance.glGetIntegerv(OpenGLApi.instance.GL_TOTAL_MEMORY) / 1024
+            )
+        ).also(layer::notifyBackendInfoChanged)
+
         onDeviceChosen(adapterName)
     }
 

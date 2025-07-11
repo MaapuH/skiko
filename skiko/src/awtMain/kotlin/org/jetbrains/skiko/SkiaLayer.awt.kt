@@ -44,14 +44,41 @@ actual open class SkiaLayer internal constructor(
         ContentScale,
     }
 
+
+    private val directContextListeners = mutableListOf<(DirectContext) -> Unit>()
+    private val backendInfoListeners = mutableListOf<(BackendInfo) -> Unit>()
+    internal fun notifyDirectContextChanged(value: DirectContext) { renderScope.directContext = value }
+    internal fun notifyBackendInfoChanged(value: BackendInfo) { renderScope.backendInfo = value }
+
     private val renderScope = object: RenderScope {
-        override val directContext: DirectContext? get() = redrawer!!.let {
-            (it as DesktopRedrawer).directContext
+        override var directContext: DirectContext? = null
+            set(value) {
+                synchronized(directContextListeners) {
+                    directContextListeners.forEach { it.invoke(value!!) }
+                }
+                field = value
+            }
+        override var backendInfo: BackendInfo? = null
+            set(value) {
+                synchronized(backendInfoListeners) {
+                    backendInfoListeners.forEach { it.invoke(value!!) }
+                }
+                field = value
+            }
+
+        override fun addDirectContextChangeListener(listener: (DirectContext) -> Unit) {
+            synchronized(directContextListeners) {
+                directContextListeners += listener
+            }
         }
-        override val backendInfo: BackendInfo get() = redrawer!!.let {
-            (it as DesktopRedrawer).backendInfo
+
+        override fun addBackendInfoChangeListener(listener: (BackendInfo) -> Unit) {
+            synchronized(backendInfoListeners) {
+                backendInfoListeners += listener
+            }
         }
     }
+
     override fun <T> withRenderInfo(block: RenderScope.() -> T): T = renderScope.block()
 
     private var _transparency: Boolean = false
@@ -59,11 +86,7 @@ actual open class SkiaLayer internal constructor(
         get() = _transparency
         set(value) {
             _transparency = value
-            if (!value) {
-                background = UIManager.getColor("Panel.background")
-            } else {
-                background = Color(0, 0, 0, 0)
-            }
+            background = if (value) Color(0, 0, 0, 0) else UIManager.getColor("Panel.background")
         }
 
     internal val backedLayer: HardwareLayer

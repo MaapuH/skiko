@@ -57,9 +57,38 @@ open class SkiaSwingLayer(
         }
     }
 
-    private val renderScope = object : RenderScope {
-        override val directContext: DirectContext? get() = redrawer!!.directContext
-        override val backendInfo: BackendInfo get() = redrawer!!.backendInfo
+    private val directContextListeners = mutableListOf<(DirectContext) -> Unit>()
+    private val backendInfoListeners = mutableListOf<(BackendInfo) -> Unit>()
+    internal fun notifyDirectContextChanged(value: DirectContext) { renderScope.directContext = value }
+    internal fun notifyBackendInfoChanged(value: BackendInfo) { renderScope.backendInfo = value }
+
+    private val renderScope = object: RenderScope {
+        override var directContext: DirectContext? = null
+            set(value) {
+                synchronized(directContextListeners) {
+                    directContextListeners.forEach { it.invoke(value!!) }
+                }
+                field = value
+            }
+        override var backendInfo: BackendInfo? = null
+            set(value) {
+                synchronized(backendInfoListeners) {
+                    backendInfoListeners.forEach { it.invoke(value!!) }
+                }
+                field = value
+            }
+
+        override fun addDirectContextChangeListener(listener: (DirectContext) -> Unit) {
+            synchronized(directContextListeners) {
+                directContextListeners += listener
+            }
+        }
+
+        override fun addBackendInfoChangeListener(listener: (BackendInfo) -> Unit) {
+            synchronized(backendInfoListeners) {
+                backendInfoListeners += listener
+            }
+        }
     }
 
     override fun <T> withRenderInfo(block: RenderScope.() -> T): T = renderScope.block()

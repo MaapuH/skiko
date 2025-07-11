@@ -24,6 +24,11 @@ internal class LinuxOpenGLRedrawer(
     private var context = 0L
     private val swapInterval = if (properties.isVsyncEnabled) 1 else 0
 
+
+    override val backendInfo: BackendInfo
+    override val directContext: DirectContext?
+        get() = contextHandler.context ?: directContextNotInitializedError()
+
     init {
         layer.backedLayer.lockLinuxDrawingSurface {
             context = it.createContext(layer.transparency)
@@ -39,32 +44,25 @@ internal class LinuxOpenGLRedrawer(
             onDeviceChosen(adapterName)
             it.setSwapInterval(swapInterval)
         }
+        if (context == 0L) backendInfoIsNotInitializedError()
+        val drawingSurface = lockLinuxDrawingSurface(layer.backedLayer)
+        backendInfo = try {
+            drawingSurface.makeCurrent(context)
+            BackendInfo.OpenGL(
+                context,
+                DeviceInfo.LinuxOpenGL(
+                    drawingSurface.display,
+                    drawingSurface.window,
+                    adapterName ?: "",
+                    OpenGLApi.instance.glGetIntegerv(OpenGLApi.instance.GL_TOTAL_MEMORY) / 1024
+                )
+            ).also(layer::notifyBackendInfoChanged)
+        } finally {
+            unlockLinuxDrawingSurface(drawingSurface)
+            makeCurrentNull()
+        }
         onContextInit()
     }
-
-    override val backendInfo: BackendInfo
-        get() {
-            if (context == 0L) backendInfoIsNotInitializedError()
-            val drawingSurface = lockLinuxDrawingSurface(layer.backedLayer)
-            return try {
-                drawingSurface.makeCurrent(context)
-                BackendInfo.OpenGL(
-                    context,
-                    DeviceInfo.LinuxOpenGL(
-                        drawingSurface.display,
-                        drawingSurface.window,
-                        adapterName ?: "",
-                        OpenGLApi.instance.glGetIntegerv(OpenGLApi.instance.GL_TOTAL_MEMORY) / 1024
-                    )
-                )
-            } finally {
-                unlockLinuxDrawingSurface(drawingSurface)
-                makeCurrentNull()
-            }
-        }
-
-    override val directContext: DirectContext?
-        get() = contextHandler.context ?: directContextNotInitializedError()
 
     private val adapterName get() = OpenGLApi.instance.glGetString(OpenGLApi.instance.GL_RENDERER)
 

@@ -13,13 +13,14 @@ internal class SoftwareRedrawer(
     private val properties: SkiaLayerProperties
 ) : AWTRedrawer(layer, analytics, GraphicsApi.SOFTWARE_FAST) {
     init {
+        layer.notifyBackendInfoChanged(backendInfo)
         onDeviceChosen("Software")
     }
 
     private val contextHandler = SoftwareContextHandler(layer)
-    override val backendInfo: BackendInfo
-        get() = BackendInfo.SoftwareFast
-    override val directContext: DirectContext? = null
+
+    override val backendInfo: BackendInfo get() = BackendInfo.SoftwareFast
+    override val directContext: DirectContext? get() = null
 
     override val renderInfo: String get() = contextHandler.rendererInfo()
 

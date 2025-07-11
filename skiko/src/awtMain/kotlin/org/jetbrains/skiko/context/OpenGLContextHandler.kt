@@ -7,7 +7,10 @@ internal class OpenGLContextHandler(layer: SkiaLayer) : JvmContextHandler(layer)
     override fun initContext(): Boolean {
         try {
             if (context == null) {
-                context = makeGLContext()
+                makeGLContext().let {
+                    layer.notifyDirectContextChanged(it)
+                    context = it
+                }
                 if (System.getProperty("skiko.hardwareInfo.enabled") == "true") {
                     Logger.info { "Renderer info:\n ${rendererInfo()}" }
                 }
