@@ -122,7 +122,7 @@ class Paint : Managed {
     var mode: PaintMode
         get() = try {
             Stats.onNativeCall()
-            PaintMode.values().get(_nGetMode(_ptr))
+            PaintMode.entries[_nGetMode(_ptr)]
         } finally {
             reachabilityBarrier(this)
         }
@@ -338,7 +338,7 @@ class Paint : Managed {
     var strokeCap: PaintStrokeCap
         get() = try {
             Stats.onNativeCall()
-            PaintStrokeCap.values().get(_nGetStrokeCap(_ptr))
+            PaintStrokeCap.entries[_nGetStrokeCap(_ptr)]
         } finally {
             reachabilityBarrier(this)
         }
@@ -359,7 +359,7 @@ class Paint : Managed {
     var strokeJoin: PaintStrokeJoin
         get() = try {
             Stats.onNativeCall()
-            PaintStrokeJoin.values().get(_nGetStrokeJoin(_ptr))
+            PaintStrokeJoin.entries[_nGetStrokeJoin(_ptr)]
         } finally {
             reachabilityBarrier(this)
         }
@@ -436,7 +436,7 @@ class Paint : Managed {
     var blendMode: BlendMode
         get() = try {
             Stats.onNativeCall()
-            BlendMode.values().get(_nGetBlendMode(_ptr))
+            BlendMode.entries[_nGetBlendMode(_ptr)]
         } finally {
             reachabilityBarrier(this)
         }
@@ -444,6 +444,35 @@ class Paint : Managed {
             Stats.onNativeCall()
             _nSetBlendMode(_ptr, value.ordinal)
         } finally {
+            reachabilityBarrier(this)
+        }
+
+    /**
+     * Returns the user-supplied blend function, if one has been set.
+     *
+     * A null blender signifies the default SrcOver behavior.
+     *
+     * For convenience, you can call [blendMode] if the blend effect can be expressed
+     * as one of those values.
+     *
+     * @see [https://fiddle.skia.org/c/@Paint_setBlender](https://fiddle.skia.org/c/@Paint_setBlender)
+     * @see [https://fiddle.skia.org/c/@Paint_refBlender](https://fiddle.skia.org/c/@Paint_refBlender)
+     *
+     * @return  the [Blender] assigned to this paint, otherwise null
+     */
+    var blender: Blender?
+        get() = try {
+            Stats.onNativeCall()
+            val blenderPtr = _nGetBlender(_ptr)
+            if (blenderPtr == NullPointer) null else Blender(blenderPtr)
+        } finally {
+            reachabilityBarrier(this)
+        }
+        set(value) = try {
+            Stats.onNativeCall()
+            _nSetBlender(_ptr, getPtr(value))
+        } finally {
+            reachabilityBarrier(value)
             reachabilityBarrier(this)
         }
 
@@ -561,145 +590,115 @@ class Paint : Managed {
 }
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetFinalizer")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetFinalizer")
 private external fun Paint_nGetFinalizer(): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nMake")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nMake")
 private external fun Paint_nMake(): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nMakeClone")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nMakeClone")
 private external fun Paint_nMakeClone(ptr: NativePointer): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nEquals")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nEquals")
 private external fun Paint_nEquals(ptr: NativePointer, otherPtr: NativePointer): Boolean
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nReset")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nReset")
 private external fun Paint_nReset(ptr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nIsAntiAlias")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nIsAntiAlias")
 private external fun _nIsAntiAlias(ptr: NativePointer): Boolean
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetAntiAlias")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetAntiAlias")
 private external fun _nSetAntiAlias(ptr: NativePointer, value: Boolean)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nIsDither")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nIsDither")
 private external fun _nIsDither(ptr: NativePointer): Boolean
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetDither")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetDither")
 private external fun _nSetDither(ptr: NativePointer, value: Boolean)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetMode")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetMode")
 private external fun _nGetMode(ptr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetMode")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetMode")
 private external fun _nSetMode(ptr: NativePointer, value: Int)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetColor")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetColor")
 private external fun Paint_nGetColor(ptr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetColor4f")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetColor4f")
 private external fun _nGetColor4f(ptr: NativePointer, arr: InteropPointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetColor")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetColor")
 private external fun _nSetColor(ptr: NativePointer, argb: Int)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetColor4f")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetColor4f")
 private external fun _nSetColor4f(ptr: NativePointer, r: Float, g: Float, b: Float, a: Float, colorSpacePtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetStrokeWidth")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetStrokeWidth")
 private external fun _nGetStrokeWidth(ptr: NativePointer): Float
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetStrokeWidth")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetStrokeWidth")
 private external fun _nSetStrokeWidth(ptr: NativePointer, value: Float)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetStrokeMiter")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetStrokeMiter")
 private external fun _nGetStrokeMiter(ptr: NativePointer): Float
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetStrokeMiter")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetStrokeMiter")
 private external fun _nSetStrokeMiter(ptr: NativePointer, value: Float)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetStrokeCap")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetStrokeCap")
 private external fun _nGetStrokeCap(ptr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetStrokeCap")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetStrokeCap")
 private external fun _nSetStrokeCap(ptr: NativePointer, value: Int)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetStrokeJoin")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetStrokeJoin")
 private external fun _nGetStrokeJoin(ptr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetStrokeJoin")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetStrokeJoin")
 private external fun _nSetStrokeJoin(ptr: NativePointer, value: Int)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetShader")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetShader")
 private external fun _nGetShader(ptr: NativePointer): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetShader")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetShader")
 private external fun _nSetShader(ptr: NativePointer, shaderPtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetColorFilter")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetColorFilter")
 private external fun _nGetColorFilter(ptr: NativePointer): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetColorFilter")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetColorFilter")
 private external fun _nSetColorFilter(ptr: NativePointer, colorFilterPtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetBlendMode")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetBlendMode")
 private external fun _nGetBlendMode(ptr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetBlendMode")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetBlendMode")
 private external fun _nSetBlendMode(ptr: NativePointer, mode: Int)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetPathEffect")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetPathEffect")
 private external fun _nGetPathEffect(ptr: NativePointer): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetPathEffect")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetPathEffect")
 private external fun _nSetPathEffect(ptr: NativePointer, pathEffectPtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetMaskFilter")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetMaskFilter")
 private external fun _nGetMaskFilter(ptr: NativePointer): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetMaskFilter")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetMaskFilter")
 private external fun _nSetMaskFilter(ptr: NativePointer, filterPtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nGetImageFilter")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nGetImageFilter")
 private external fun _nGetImageFilter(ptr: NativePointer): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nSetImageFilter")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nSetImageFilter")
 private external fun _nSetImageFilter(ptr: NativePointer, filterPtr: NativePointer)
 
+@ExternalSymbolName("org_jetbrains_skia_Paint__1nGetBlender")
+private external fun _nGetBlender(ptr: NativePointer): NativePointer
+
+@ExternalSymbolName("org_jetbrains_skia_Paint__1nSetBlender")
+private external fun _nSetBlender(ptr: NativePointer, blenderPtr: NativePointer)
+
 @ExternalSymbolName("org_jetbrains_skia_Paint__1nHasNothingToDraw")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Paint__1nHasNothingToDraw")
 private external fun _nHasNothingToDraw(ptr: NativePointer): Boolean

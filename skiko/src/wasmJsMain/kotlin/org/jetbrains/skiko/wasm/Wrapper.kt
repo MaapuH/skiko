@@ -1,7 +1,10 @@
 package org.jetbrains.skiko.wasm
 
+import kotlinx.coroutines.await
 import org.jetbrains.skia.impl.NativePointer
+import org.jetbrains.skiko.GL
 import org.jetbrains.skiko.w3c.HTMLCanvasElement
+import org.khronos.webgl.ArrayBuffer
 
 @JsFun(
 """() => {
@@ -27,3 +30,11 @@ internal actual fun createWebGLContext(canvas: HTMLCanvasElement, attr: ContextA
     check(attr === null) { "TODO!" }
     return GL.createContext(canvas, createDefaultContextAttributes())
 }
+
+actual fun onWasmReady(onReady: () -> Unit) {
+    awaitSkiko.then {
+        onReady()
+        null
+    }
+}
+

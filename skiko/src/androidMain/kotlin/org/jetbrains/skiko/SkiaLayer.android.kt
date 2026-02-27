@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.*
 import org.jetbrains.skia.Canvas
 import org.jetbrains.skia.PixelGeometry
+import org.jetbrains.skia.Color
 
 actual open class SkiaLayer {
     private var glView: SkikoSurfaceView? = null
@@ -23,6 +24,15 @@ actual open class SkiaLayer {
         get() = false
         set(value) {
             if (value) throw IllegalArgumentException("transparency unsupported")
+        }
+
+    /**
+     * The background color of the layer.
+     */
+    actual internal var backgroundColor: Int = Color.WHITE
+        set(value) {
+            field = value
+            needRender()
         }
 
     actual var renderDelegate: SkikoRenderDelegate? = null
@@ -47,7 +57,7 @@ actual open class SkiaLayer {
 
         view.setFocusableInTouchMode(true)
 
-        needRedraw()
+        needRender()
     }
 
     actual fun detach() {
@@ -57,17 +67,22 @@ actual open class SkiaLayer {
         }
     }
 
-    actual fun needRedraw() {
+    actual fun needRender(throttledToVsync: Boolean) {
         glView?.apply {
             scheduleFrame()
         }
     }
+
+    actual fun needRedraw() = needRender()
 
     actual val pixelGeometry: PixelGeometry
         get() = PixelGeometry.UNKNOWN
 
     actual val component: Any?
         get() = this.container
+
+    actual internal val cutoutRectangles: List<ClipRectangle>
+        get() = emptyList()
 
     internal actual fun draw(canvas: Canvas): Unit = TODO()
 }

@@ -36,8 +36,30 @@ class Picture internal constructor(ptr: NativePointer, managed: Boolean = true) 
          * @see [https://fiddle.skia.org/c/@Picture_MakePlaceholder](https://fiddle.skia.org/c/@Picture_MakePlaceholder)
          */
         fun makePlaceholder(cull: Rect): Picture {
+            return makePlaceholder(cull.left, cull.top, cull.right, cull.bottom)
+        }
+
+        /**
+         *
+         * Returns a placeholder Picture. Result does not draw, and contains only
+         * cull Rect, a hint of its bounds. Result is immutable; it cannot be changed
+         * later. Result identifier is unique.
+         *
+         *
+         * Returned placeholder can be intercepted during playback to insert other
+         * commands into Canvas draw stream.
+         *
+         * @param left    placeholder left coordinate
+         * @param top     placeholder top coordinate
+         * @param right   placeholder right coordinate
+         * @param bottom  placeholder bottom coordinate
+         * @return      placeholder with unique identifier
+         *
+         * @see [https://fiddle.skia.org/c/@Picture_MakePlaceholder](https://fiddle.skia.org/c/@Picture_MakePlaceholder)
+         */
+        fun makePlaceholder(left: Float, top: Float, right: Float, bottom: Float): Picture {
             Stats.onNativeCall()
-            return Picture(_nMakePlaceholder(cull.left, cull.top, cull.right, cull.bottom))
+            return Picture(_nMakePlaceholder(left, top, right, bottom))
         }
 
         init {
@@ -160,7 +182,7 @@ class Picture internal constructor(ptr: NativePointer, managed: Boolean = true) 
      *
      * @see [https://fiddle.skia.org/c/@Picture_approximateBytesUsed](https://fiddle.skia.org/c/@Picture_approximateBytesUsed)
      */
-    val approximateBytesUsed: NativePointer
+    val approximateBytesUsed: Int
         get() = try {
             Stats.onNativeCall()
             _nGetApproximateBytesUsed(_ptr)
@@ -233,35 +255,27 @@ class Picture internal constructor(ptr: NativePointer, managed: Boolean = true) 
 }
 
 @ExternalSymbolName("org_jetbrains_skia_Picture__1nMakeFromData")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Picture__1nMakeFromData")
 private external fun Picture_nMakeFromData(dataPtr: NativePointer /*, SkDeserialProcs */): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Picture__1nGetCullRect")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Picture__1nGetCullRect")
 private external fun _nGetCullRect(ptr: NativePointer, ltrb: InteropPointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Picture__1nGetUniqueId")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Picture__1nGetUniqueId")
 private external fun _nGetUniqueId(ptr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Picture__1nSerializeToData")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Picture__1nSerializeToData")
 private external fun _nSerializeToData(ptr: NativePointer /*, SkSerialProcs */): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Picture__1nMakePlaceholder")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Picture__1nMakePlaceholder")
 private external fun _nMakePlaceholder(left: Float, top: Float, right: Float, bottom: Float): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Picture__1nGetApproximateOpCount")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Picture__1nGetApproximateOpCount")
 private external fun _nGetApproximateOpCount(ptr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Picture__1nGetApproximateBytesUsed")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Picture__1nGetApproximateBytesUsed")
-private external fun _nGetApproximateBytesUsed(ptr: NativePointer): NativePointer
+private external fun _nGetApproximateBytesUsed(ptr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Picture__1nMakeShader")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Picture__1nMakeShader")
 private external fun _nMakeShader(
     ptr: NativePointer,
     tmx: Int,
@@ -276,5 +290,4 @@ private external fun _nMakeShader(
 ): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Picture__1nPlayback")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Picture__1nPlayback")
 private external fun _nPlayback(ptr: NativePointer, canvasPtr: NativePointer, data: InteropPointer)

@@ -1,5 +1,6 @@
 package org.jetbrains.skiko
 
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -8,28 +9,30 @@ import org.jetbrains.skiko.redrawer.Redrawer
 import org.jetbrains.skiko.redrawer.RedrawerManager
 import java.awt.Color
 import java.awt.Component
+import java.awt.Graphics
 import java.awt.Point
 import java.awt.event.*
 import java.awt.geom.AffineTransform
 import java.awt.im.InputMethodRequests
+import java.beans.PropertyChangeListener
 import java.util.concurrent.CancellationException
 import javax.accessibility.Accessible
+import javax.accessibility.AccessibleContext
+import javax.accessibility.AccessibleRole
 import javax.swing.JComponent
-import javax.swing.JPanel
 import javax.swing.SwingUtilities
 import javax.swing.SwingUtilities.isEventDispatchThread
-import javax.swing.UIManager
 import javax.swing.event.AncestorEvent
 import javax.swing.event.AncestorListener
 import kotlin.math.floor
 
 actual open class SkiaLayer internal constructor(
-    externalAccessibleFactory: ((Component) -> Accessible)? = null,
-    private val properties: SkiaLayerProperties,
+    accessibleContextProvider: ((Component) -> AccessibleContext)? = null,
+    val properties: SkiaLayerProperties,
     private val renderFactory: RenderFactory = RenderFactory.Default,
     private val analytics: SkiaLayerAnalytics = SkiaLayerAnalytics.Empty,
     actual val pixelGeometry: PixelGeometry = PixelGeometry.UNKNOWN,
-) : JPanel() {
+) : JComponent(), Accessible {
 
     internal companion object {
         init {
@@ -42,22 +45,10 @@ actual open class SkiaLayer internal constructor(
         ContentScale,
     }
 
-    private var _transparency: Boolean = false
-    actual var transparency: Boolean
-        get() = _transparency
-        set(value) {
-            _transparency = value
-            if (!value) {
-                background = UIManager.getColor("Panel.background")
-            } else {
-                background = Color(0, 0, 0, 0)
-            }
-        }
-
     internal val backedLayer: HardwareLayer
 
     constructor(
-        externalAccessibleFactory: ((Component) -> Accessible)? = null,
+        accessibleContextProvider: ((Component) -> AccessibleContext)? = null,
         isVsyncEnabled: Boolean = SkikoProperties.vsyncEnabled,
         isVsyncFramelimitFallbackEnabled: Boolean = SkikoProperties.vsyncFramelimitFallbackEnabled,
         frameBuffering: FrameBuffering = SkikoProperties.frameBuffering,
@@ -65,7 +56,7 @@ actual open class SkiaLayer internal constructor(
         analytics: SkiaLayerAnalytics = SkiaLayerAnalytics.Empty,
         pixelGeometry: PixelGeometry = PixelGeometry.UNKNOWN,
     ) : this(
-        externalAccessibleFactory,
+        accessibleContextProvider,
         SkiaLayerProperties(
             isVsyncEnabled,
             isVsyncFramelimitFallbackEnabled,
@@ -78,12 +69,12 @@ actual open class SkiaLayer internal constructor(
     )
 
     constructor(
-        externalAccessibleFactory: ((Component) -> Accessible)? = null,
+        accessibleContextProvider: ((Component) -> AccessibleContext)? = null,
         properties: SkiaLayerProperties,
         analytics: SkiaLayerAnalytics = SkiaLayerAnalytics.Empty,
         pixelGeometry: PixelGeometry = PixelGeometry.UNKNOWN,
     ) : this(
-        externalAccessibleFactory,
+        accessibleContextProvider,
         properties,
         RenderFactory.Default,
         analytics,
@@ -97,11 +88,10 @@ actual open class SkiaLayer internal constructor(
     private var latestReceivedGraphicsContextScaleTransform: AffineTransform? = null
 
     init {
-        isOpaque = false
         layout = null
-        backedLayer = object : HardwareLayer(externalAccessibleFactory) {
-            override fun paint(g: java.awt.Graphics) {
-                Logger.debug { "Paint called on $this" }
+        backedLayer = object : HardwareLayer(accessibleContextProvider) {
+            override fun paint(g: Graphics) {
+                Logger.debug { "Paint called on HardwareLayer $this" }
                 checkContentScale()
 
                 // 1. JPanel.paint is not always called (in rare cases).
@@ -110,8 +100,18 @@ actual open class SkiaLayer internal constructor(
                 // 2. HardwareLayer.paint is also not always called.
                 //    For example, on macOs when we resize window or change DPI
                 //
-                // 3. to avoid double paint in one single frame, use needRedraw instead of redrawImmediately
-                redrawer?.needRedraw()
+                // 3. to avoid double paint in one single frame, use needRender instead of renderImmediately
+                redrawer?.needRender(throttledToVsync = false)
+            }
+
+            @Suppress("OVERRIDE_DEPRECATION")
+            override fun reshape(x: Int, y: Int, width: Int, height: Int) {
+                Logger.debug { "reshape(x=$x, y=$y, w=$width, h=$height) called on $this" }
+                @Suppress("DEPRECATION")
+                super.reshape(x, y, width, height)
+
+                redrawer?.syncBounds()
+                redrawer?.needRender(throttledToVsync = false)
             }
 
             override fun getInputMethodRequests(): InputMethodRequests? {
@@ -175,7 +175,6 @@ actual open class SkiaLayer internal constructor(
             }
         }
 
-
         addPropertyChangeListener("graphicsContextScaleTransform") {
             Logger.debug { "graphicsContextScaleTransform changed for $this" }
             latestReceivedGraphicsContextScaleTransform = it.newValue as AffineTransform
@@ -185,12 +184,60 @@ actual open class SkiaLayer internal constructor(
             // Workaround for JBR-5259
             if (hostOs == OS.Windows) {
                 peerBufferSizeFixJob?.cancel()
+                @OptIn(DelicateCoroutinesApi::class)
                 peerBufferSizeFixJob = GlobalScope.launch(MainUIDispatcher) {
                     backedLayer.setLocation(1, 0)
                     backedLayer.setLocation(0, 0)
                 }
             }
         }
+    }
+
+    private var _transparency: Boolean = false
+    actual var transparency: Boolean
+        get() = _transparency
+        set(value) {
+            configureBackground(value, _background)
+        }
+
+    internal actual var backgroundColor: Int
+        get() = background.rgb  // Will return an ancestor's non-null background after setBackground(null).
+        set(value) {
+            configureBackground(_transparency, Color(value, true))
+        }
+
+    // This is needed because after setBackground(null), getBackground() will not return null, but an ancestor's
+    // non-null background. But we need to preserve the null value when modifying `transparency`.
+    private var _background: Color? = null
+
+    override fun setBackground(bg: Color?) {
+        configureBackground(_transparency, bg)
+    }
+
+    private fun configureBackground(transparency: Boolean, bg: Color?) {
+        _transparency = transparency
+        _background = bg
+
+        // Note that SkiaLayer itself doesn't draw its background; only backedLayer does, as it's heavyweight.
+        // We set the property just so it can be read back correctly, and also for the case when bg==null, as that
+        // indicates the parent's background should be used (getBackground() calls parent.getBackground() if own
+        // background is null).
+        super.setBackground(bg)
+
+        // To enable transparency, the backedLayer's background must be transparent (also the window background).
+        backedLayer.background = if (transparency) Color(0, 0, 0, 0) else bg
+
+        needRender()
+    }
+
+    // Override to make final, because it's called it in the init block
+    final override fun addAncestorListener(listener: AncestorListener?) {
+        super.addAncestorListener(listener)
+    }
+
+    // Override to make final, because it's called it in the init block
+    final override fun addPropertyChangeListener(propertyName: String?, listener: PropertyChangeListener?) {
+        super.addPropertyChangeListener(propertyName, listener)
     }
 
     private var fullscreenAdapter = FullscreenAdapter(backedLayer)
@@ -288,6 +335,9 @@ actual open class SkiaLayer internal constructor(
 
     val clipComponents = mutableListOf<ClipRectangle>()
 
+    internal actual val cutoutRectangles: List<ClipRectangle>
+        get() = clipComponents
+
     @Volatile
     private var isDisposed = false
 
@@ -336,7 +386,9 @@ actual open class SkiaLayer internal constructor(
 
     private fun notifyChange(kind: PropertyKind) {
         stateChangeListeners[kind]?.let { handlers ->
-            handlers.forEach { it(this) }
+            for (index in handlers.indices) {
+                handlers[index].invoke(this)
+            }
         }
     }
 
@@ -356,6 +408,30 @@ actual open class SkiaLayer internal constructor(
         }
     }
 
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun reshape(x: Int, y: Int, w: Int, h: Int) {
+        @Suppress("DEPRECATION")
+        super.reshape(x, y, w, h)
+
+        // Calling renderImmediately as early as possible improves the situation with
+        // the visual glitch when the drawn content is scaled during window resize.
+        // Note, however, that this actually causes the reverse glitch (content appears
+        // scaled in the other direction from the window size), but this seems to
+        // happen less often.
+        //
+        // Calling redraw during layout might break software renderers,
+        // so apply this fix only for the Direct3D case.
+        if (renderApi == GraphicsApi.DIRECT3D && isShowing) {
+            redrawer?.syncBounds()
+            redrawer?.renderImmediately()
+        }
+
+        // Setting the bounds of children should be done only in the layout pass,
+        // but unfortunately, Compose expects the drawing area to be resized
+        // immediately when `SkiaLayer` is resized.
+        validate()
+    }
+
     override fun doLayout() {
         Logger.debug { "doLayout on $this" }
         backedLayer.setBounds(
@@ -365,41 +441,12 @@ actual open class SkiaLayer internal constructor(
             adjustSizeToContentScale(contentScale, height)
         )
         backedLayer.validate()
-        redrawer?.syncBounds()
     }
 
-    override fun paint(g: java.awt.Graphics) {
-        Logger.debug { "Paint called on: $this" }
+    override fun paint(g: Graphics) {
+        Logger.debug { "paint called on SkiaLayer $this" }
         checkContentScale()
-        tryRedrawImmediately()
-    }
-
-    override fun setBounds(x: Int, y: Int, width: Int, height: Int) {
-        super.setBounds(x, y, width, height)
-
-        // To avoid visual artifacts on Windows/Direct3D,
-        // redrawing should be performed immediately, without scheduling to "later".
-        // Subscribing to events instead of overriding this method won't help too.
-        //
-        // Please note that calling redraw during layout might break software renderers,
-        // so applying this fix only for Direct3D case.
-        if (renderApi == GraphicsApi.DIRECT3D && isShowing) {
-            redrawer?.syncBounds()
-            tryRedrawImmediately()
-        }
-    }
-
-    private fun tryRedrawImmediately() {
-        // It might be called inside `renderDelegate`,
-        // so to avoid recursive call (not supported) just schedule redrawing.
-        //
-        // For example if we call some AWT function inside renderer.onRender,
-        // such as `jframe.isEnabled = false` on Linux
-        if (isRendering) {
-            redrawer?.needRedraw()
-        } else {
-            redrawer?.redrawImmediately()
-        }
+        redrawer?.needRender(throttledToVsync = false)
     }
 
     // Workaround for JBR-5274 and JBR-5305
@@ -526,43 +573,47 @@ actual open class SkiaLayer internal constructor(
     /**
      * Redraw on the next animation Frame (on vsync signal if vsync is enabled).
      */
-    actual fun needRedraw() {
+    actual fun needRender(throttledToVsync: Boolean) {
         check(isEventDispatchThread()) { "Method should be called from AWT event dispatch thread" }
         check(!isDisposed) { "SkiaLayer is disposed" }
-        redrawer?.needRedraw()
+        redrawer?.needRender(throttledToVsync)
     }
 
-    @Suppress("LeakingThis")
-    private val fpsCounter = defaultFPSCounter(this)
+    @Deprecated(
+        message = "Use needRender() instead",
+        replaceWith = ReplaceWith("needRender()")
+    )
+    actual fun needRedraw() = needRender()
+
+    /**
+     * Updates the layer and redraws synchronously.
+     */
+    fun renderImmediately() {
+        redrawer?.renderImmediately()
+    }
 
     internal fun update(nanoTime: Long) {
         check(isEventDispatchThread()) { "Method should be called from AWT event dispatch thread" }
         check(!isDisposed) { "SkiaLayer is disposed" }
 
         checkContentScale()
-
         FrameWatcher.nextFrame()
-        fpsCounter?.tick()
 
         // The current approach is to render into a picture in the main thread, and render this picture in the render thread
         // If this approach will be changed, create an issue in https://youtrack.jetbrains.com/issues/CMP for changing it in
         // https://github.com/JetBrains/compose-multiplatform/blob/e4e2d329709cded91a09cc612d4defbce37aad96/benchmarks/multiplatform/benchmarks/src/commonMain/kotlin/MeasureComposable.kt#L151 as well
 
-        val pictureWidth = (width * contentScale).toInt().coerceAtLeast(0)
-        val pictureHeight = (height * contentScale).toInt().coerceAtLeast(0)
+        val pictureWidth = (backedLayer.width * contentScale).coerceAtLeast(0f)
+        val pictureHeight = (backedLayer.height * contentScale).coerceAtLeast(0f)
+        val intWidth = pictureWidth.toInt()
+        val intHeight = pictureHeight.toInt()
 
-        val bounds = Rect.makeWH(pictureWidth.toFloat(), pictureHeight.toFloat())
         val pictureRecorder = pictureRecorder!!
-        val canvas = pictureRecorder.beginRecording(bounds)
-
-        // clipping
-        for (component in clipComponents) {
-            canvas.clipRectBy(component, contentScale)
-        }
+        val canvas = pictureRecorder.beginRecording(0f, 0f, pictureWidth, pictureHeight)
 
         try {
             isRendering = true
-            renderDelegate?.onRender(canvas, pictureWidth, pictureHeight, nanoTime)
+            renderDelegate?.onRender(canvas, intWidth, intHeight, nanoTime)
         } finally {
             isRendering = false
         }
@@ -573,15 +624,19 @@ actual open class SkiaLayer internal constructor(
             synchronized(pictureLock) {
                 picture?.instance?.close()
                 val picture = pictureRecorder.finishRecordingAsPicture()
-                this.picture = PictureHolder(picture, pictureWidth, pictureHeight)
+                this.picture = PictureHolder(picture, intWidth, intHeight)
             }
         }
     }
+
+    @Suppress("LeakingThis")
+    private val fpsCounter = defaultFPSCounter(this)
 
     internal inline fun inDrawScope(body: () -> Unit) {
         check(isEventDispatchThread()) { "Method should be called from AWT event dispatch thread" }
         check(!isDisposed) { "SkiaLayer is disposed" }
         try {
+            fpsCounter?.tick()
             body()
         } catch (e: CancellationException) {
             // ignore
@@ -589,7 +644,7 @@ actual open class SkiaLayer internal constructor(
             if (!isDisposed) {
                 Logger.warn(e) { "Exception in draw scope" }
                 redrawerManager.findNextWorkingRenderApi()
-                redrawer?.redrawImmediately()
+                redrawer?.renderImmediately()
             }
         }
     }
@@ -629,13 +684,23 @@ actual open class SkiaLayer internal constructor(
         }
     }
 
-    fun requestNativeFocusOnAccessible(accessible: Accessible?) {
-        backedLayer.requestNativeFocusOnAccessible(accessible)
+    override fun getAccessibleContext(): AccessibleContext {
+        if (accessibleContext == null) {
+            accessibleContext = AccessibleSkiaLayer()
+        }
+        return accessibleContext
+    }
+
+    @Suppress("RedundantInnerClassModifier")
+    protected inner class AccessibleSkiaLayer : AccessibleJComponent() {
+        override fun getAccessibleRole(): AccessibleRole {
+            return AccessibleRole.PANEL
+        }
     }
 }
 
 /**
- * Disable showing window title bar.
+ * Disable showing the window title bar.
  */
 fun SkiaLayer.disableTitleBar(customHeaderHeight: Float) {
     backedLayer.disableTitleBar(customHeaderHeight)
@@ -651,7 +716,7 @@ fun orderEmojiAndSymbolsPopup() {
 internal fun defaultFPSCounter(
     component: Component
 ): FPSCounter? = with(SkikoProperties) {
-    if (!SkikoProperties.fpsEnabled) return@with null
+    if (!fpsEnabled) return@with null
 
     // it is slow on Linux (100ms), so we cache it. Also refreshRate available only after window is visible
     val refreshRate by lazy { component.graphicsConfiguration.device.displayMode.refreshRate }
@@ -660,19 +725,6 @@ internal fun defaultFPSCounter(
         showLongFrames = fpsLongFramesShow,
         getLongFrameMillis = { fpsLongFramesMillis ?: (1.5 * 1000 / refreshRate) },
         logOnTick = true
-    )
-}
-
-internal fun Canvas.clipRectBy(rectangle: ClipRectangle, scale: Float) {
-    clipRect(
-        Rect.makeLTRB(
-            rectangle.x * scale,
-            rectangle.y * scale,
-            (rectangle.x + rectangle.width) * scale,
-            (rectangle.y + rectangle.height) * scale
-        ),
-        ClipMode.DIFFERENCE,
-        true
     )
 }
 

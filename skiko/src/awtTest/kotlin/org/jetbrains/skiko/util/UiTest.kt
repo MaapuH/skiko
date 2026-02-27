@@ -3,6 +3,8 @@ package org.jetbrains.skiko.util
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.skiko.*
+import org.jetbrains.skiko.swing.SkiaSwingLayer
+import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import java.awt.GraphicsEnvironment
@@ -19,7 +21,7 @@ internal fun uiTest(
 
     runBlocking(MainUIDispatcher) {
         if (renderApiProperty == "all") {
-            for (renderApi in SkikoProperties.fallbackRenderApiQueue(SkikoProperties.renderApi)) {
+            for (renderApi in SkikoProperties.fallbackRenderApiQueue(initialApi = null)) {
                 if (renderApi in excludeRenderApis) {
                     println("Skipping $renderApi renderApi")
                     continue
@@ -58,6 +60,25 @@ internal class UiTestScope(
 
         init {
             setupContent()
+        }
+    }
+
+    private val ignoreAssertsFor =
+        System.getProperty("skiko.test.ui.renderApi.ignoreAssertsFor")
+            .split(",")
+            .filter { it.isNotBlank() }
+            .map(GraphicsApi::valueOf)
+
+    fun assertRenderApiFor(layer: SkiaLayer) {
+        if (renderApi !in ignoreAssertsFor) {
+            assertEquals(renderApi, layer.renderApi)
+        }
+    }
+
+    @OptIn(ExperimentalSkikoApi::class)
+    fun assertRenderApiFor(layer: SkiaSwingLayer) {
+        if (renderApi !in ignoreAssertsFor) {
+            assertEquals(renderApi, layer.renderApi)
         }
     }
 }

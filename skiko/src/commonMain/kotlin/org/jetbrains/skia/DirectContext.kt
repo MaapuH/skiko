@@ -127,6 +127,28 @@ class DirectContext internal constructor(ptr: NativePointer) : RefCnt(ptr) {
             reachabilityBarrier(this)
         }
     }
+
+    /**
+     * GPU resource cache limit. If the cache currently exceeds this limit,
+     * it will be purged (LRU) to keep the cache within the limit.
+     */
+    var resourceCacheLimit: Long
+        get() {
+            try {
+                Stats.onNativeCall()
+                return DirectContext_nGetResourceCacheLimit(_ptr)
+            } finally {
+                reachabilityBarrier(this)
+            }
+        }
+        set(value) {
+            try {
+                Stats.onNativeCall()
+                DirectContext_nSetResourceCacheLimit(_ptr, value)
+            } finally {
+                reachabilityBarrier(this)
+            }
+        }
 }
 
 fun <R> DirectContext.useContext(block: (ctx: DirectContext) -> R): R = use {
@@ -134,37 +156,34 @@ fun <R> DirectContext.useContext(block: (ctx: DirectContext) -> R): R = use {
 }
 
 @ExternalSymbolName("org_jetbrains_skia_DirectContext__1nFlush")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_DirectContext__1nFlush")
 private external fun DirectContext_nFlush(ptr: NativePointer, surfacePtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_DirectContext__1nFlushDefault")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_DirectContext__1nFlushDefault")
 private external fun DirectContext_nFlushDefault(ptr: NativePointer)
 
+@ExternalSymbolName("org_jetbrains_skia_DirectContext__1nGetResourceCacheLimit")
+private external fun DirectContext_nGetResourceCacheLimit(ptr: NativePointer): Long
+
+@ExternalSymbolName("org_jetbrains_skia_DirectContext__1nSetResourceCacheLimit")
+private external fun DirectContext_nSetResourceCacheLimit(ptr: NativePointer, maxResourceBytes: Long)
+
 @ExternalSymbolName("org_jetbrains_skia_DirectContext__1nMakeGL")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_DirectContext__1nMakeGL")
 private external fun _nMakeGL(): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_DirectContext__1nMakeMetal")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_DirectContext__1nMakeMetal")
 private external fun _nMakeMetal(devicePtr: NativePointer, queuePtr: NativePointer): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_DirectContext__1nMakeDirect3D")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_DirectContext__1nMakeDirect3D")
 private external fun _nMakeDirect3D(adapterPtr: NativePointer, devicePtr: NativePointer, queuePtr: NativePointer): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_DirectContext__1nSubmit")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_DirectContext__1nSubmit")
 private external fun _nSubmit(ptr: NativePointer, syncCpu: Boolean)
 
 @ExternalSymbolName("org_jetbrains_skia_DirectContext__1nFlushAndSubmit")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_DirectContext__1nFlushAndSubmit")
 private external fun _nFlushAndSubmit(ptr: NativePointer, surfacePtr: NativePointer, syncCpu: Boolean)
 
 @ExternalSymbolName("org_jetbrains_skia_DirectContext__1nReset")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_DirectContext__1nReset")
 private external fun _nReset(ptr: NativePointer, flags: Int)
 
 @ExternalSymbolName("org_jetbrains_skia_DirectContext__1nAbandon")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_DirectContext__1nAbandon")
 private external fun _nAbandon(ptr: NativePointer, flags: Int)

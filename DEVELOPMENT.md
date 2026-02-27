@@ -7,15 +7,15 @@
     sudo apt-get install ninja-build fontconfig libfontconfig1-dev libglu1-mesa-dev libxrandr-dev libdbus-1-dev zip multistrap libx11-dev
     ```
   * `Windows`
-    1. Download [Visual Studio Build Tools 2019](https://learn.microsoft.com/en-us/visualstudio/releases/2019/history) (search "BuildTools" on the page).
+    1. Download [Visual Studio Build Tools 2022](https://aka.ms/vs/17/release/vs_buildtools.exe).
     2. During the installation, select "Desktop development with C++"
-    3. Add an environment variable SKIKO_VSBT_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools
+    3. Add an environment variable `SKIKO_VSBT_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools`
        ```
        Control Panel|All Control Panel Items|System|Advanced system settings|Environment variables
        ```
        or by running `cmd` as administrator:
        ```
-       setx /M SKIKO_VSBT_PATH "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools"
+       setx /M SKIKO_VSBT_PATH "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"
        ```
     4. Skiko is built using Clang-cl. Clang-cl is a part of LLVM and can be downloaded from the [LLVM project's website](https://releases.llvm.org/). Please also make sure that Clang-cl.exe is available in %PATH%.
 
@@ -37,7 +37,7 @@ Add `-Dskiko.test.ui.enabled=true` to enable UI tests (integration tests, which 
 
 For example, if we want to include UI tests when we test JVM target, call this:
 ```
-./gradlew awtTest -Dskiko.test.ui.enabled=true
+./gradlew :skiko:awtTest -Dskiko.test.ui.enabled=true
 ```
 Don't run any background tasks, click mouse, or press keys during the tests. Otherwise, they probably fail.
 

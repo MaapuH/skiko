@@ -124,7 +124,13 @@ open class Canvas internal constructor(ptr: NativePointer, managed: Boolean, int
         Stats.onNativeCall()
         try {
             interopScope {
-                _nDrawPoints(_ptr, 0 /* SkCanvas::PointMode::kPoints_PointMode */, coords.size, toInterop(coords), getPtr(paint))
+                _nDrawPoints(
+                    _ptr,
+                    0 /* SkCanvas::PointMode::kPoints_PointMode */,
+                    coords.size,
+                    toInterop(coords),
+                    getPtr(paint)
+                )
             }
         } finally {
             reachabilityBarrier(paint)
@@ -187,7 +193,13 @@ open class Canvas internal constructor(ptr: NativePointer, managed: Boolean, int
         Stats.onNativeCall()
         try {
             interopScope {
-                _nDrawPoints(_ptr, 1 /* SkCanvas::PointMode::kLines_PointMode */, coords.size, toInterop(coords),getPtr(paint))
+                _nDrawPoints(
+                    _ptr,
+                    1 /* SkCanvas::PointMode::kLines_PointMode */,
+                    coords.size,
+                    toInterop(coords),
+                    getPtr(paint)
+                )
             }
         } finally {
             reachabilityBarrier(paint)
@@ -248,7 +260,13 @@ open class Canvas internal constructor(ptr: NativePointer, managed: Boolean, int
         Stats.onNativeCall()
         try {
             interopScope {
-                _nDrawPoints(_ptr, 2 /* SkCanvas::PointMode::kPolygon_PointMode */, coords.size, toInterop(coords), getPtr(paint))
+                _nDrawPoints(
+                    _ptr,
+                    2 /* SkCanvas::PointMode::kPolygon_PointMode */,
+                    coords.size,
+                    toInterop(coords),
+                    getPtr(paint)
+                )
             }
         } finally {
             reachabilityBarrier(this)
@@ -288,10 +306,10 @@ open class Canvas internal constructor(ptr: NativePointer, managed: Boolean, int
         return this
     }
 
-    fun drawRect(r: Rect, paint: Paint): Canvas {
+    fun drawRect(left: Float, top: Float, right: Float, bottom: Float, paint: Paint): Canvas {
         Stats.onNativeCall()
         try {
-            _nDrawRect(_ptr, r.left, r.top, r.right, r.bottom, getPtr(paint))
+            _nDrawRect(_ptr, left, top, right, bottom, getPtr(paint))
         } finally {
             reachabilityBarrier(this)
             reachabilityBarrier(paint)
@@ -299,15 +317,23 @@ open class Canvas internal constructor(ptr: NativePointer, managed: Boolean, int
         return this
     }
 
-    fun drawOval(r: Rect, paint: Paint): Canvas {
+    fun drawRect(r: Rect, paint: Paint): Canvas {
+        return drawRect(r.left, r.top, r.right, r.bottom, paint)
+    }
+
+    fun drawOval(left: Float, top: Float, right: Float, bottom: Float, paint: Paint): Canvas {
         Stats.onNativeCall()
         try {
-            _nDrawOval(_ptr, r.left, r.top, r.right, r.bottom, getPtr(paint))
+            _nDrawOval(_ptr, left, top, right, bottom, getPtr(paint))
         } finally {
             reachabilityBarrier(paint)
             reachabilityBarrier(this)
         }
         return this
+    }
+
+    fun drawOval(r: Rect, paint: Paint): Canvas {
+        return drawOval(r.left, r.top, r.right, r.bottom, paint)
     }
 
     fun drawCircle(x: Float, y: Float, radius: Float, paint: Paint): Canvas {
@@ -321,17 +347,21 @@ open class Canvas internal constructor(ptr: NativePointer, managed: Boolean, int
         return this
     }
 
-    fun drawRRect(r: RRect, paint: Paint): Canvas {
+    fun drawRRect(left: Float, top: Float, right: Float, bottom: Float, radii: FloatArray, paint: Paint): Canvas {
         Stats.onNativeCall()
         try {
             interopScope {
-                _nDrawRRect(_ptr, r.left, r.top, r.right, r.bottom, toInterop(r.radii), r.radii.size, getPtr(paint))
+                _nDrawRRect(_ptr, left, top, right, bottom, toInterop(radii), radii.size, getPtr(paint))
             }
         } finally {
             reachabilityBarrier(paint)
             reachabilityBarrier(this)
         }
         return this
+    }
+
+    fun drawRRect(r: RRect, paint: Paint): Canvas {
+        return drawRRect(r.left, r.top, r.right, r.bottom, r.radii, paint)
     }
 
     fun drawDRRect(outer: RRect, inner: RRect, paint: Paint): Canvas {
@@ -402,64 +432,133 @@ open class Canvas internal constructor(ptr: NativePointer, managed: Boolean, int
 
     fun drawImage(image: Image, left: Float, top: Float): Canvas {
         return drawImageRect(
-            image,
-            Rect.makeWH(image.width.toFloat(), image.height.toFloat()),
-            Rect.makeXYWH(left, top, image.width.toFloat(), image.height.toFloat()),
-            SamplingMode.DEFAULT,
-            null,
-            true
+            image = image,
+            srcLeft = 0f,
+            srcTop = 0f,
+            srcRight = image.width.toFloat(),
+            srcBottom = image.height.toFloat(),
+            dstLeft = left,
+            dstTop = top,
+            dstRight = left + image.width.toFloat(),
+            dstBottom = top + image.height.toFloat(),
+            samplingMode = SamplingMode.DEFAULT,
+            paint = null,
+            strict = true
         )
     }
 
     fun drawImage(image: Image, left: Float, top: Float, paint: Paint?): Canvas {
         return drawImageRect(
-            image,
-            Rect.makeWH(image.width.toFloat(), image.height.toFloat()),
-            Rect.makeXYWH(left, top, image.width.toFloat(), image.height.toFloat()),
-            SamplingMode.DEFAULT,
-            paint,
-            true
+            image = image,
+            srcLeft = 0f,
+            srcTop = 0f,
+            srcRight = image.width.toFloat(),
+            srcBottom = image.height.toFloat(),
+            dstLeft = left,
+            dstTop = top,
+            dstRight = left + image.width.toFloat(),
+            dstBottom = top + image.height.toFloat(),
+            samplingMode = SamplingMode.DEFAULT,
+            paint = paint,
+            strict = true
         )
     }
 
     fun drawImageRect(image: Image, dst: Rect): Canvas {
         return drawImageRect(
-            image,
-            Rect.makeWH(image.width.toFloat(), image.height.toFloat()),
-            dst,
-            SamplingMode.DEFAULT,
-            null,
-            true
+            image = image,
+            srcLeft = 0f,
+            srcTop = 0f,
+            srcRight = image.width.toFloat(),
+            srcBottom = image.height.toFloat(),
+            dstLeft = dst.left,
+            dstTop = dst.top,
+            dstRight = dst.right,
+            dstBottom = dst.bottom,
+            samplingMode = SamplingMode.DEFAULT,
+            paint = null,
+            strict = true
         )
     }
 
     fun drawImageRect(image: Image, dst: Rect, paint: Paint?): Canvas {
         return drawImageRect(
-            image,
-            Rect.makeWH(image.width.toFloat(), image.height.toFloat()),
-            dst,
-            SamplingMode.DEFAULT,
-            paint,
-            true
+            image = image,
+            srcLeft = 0f,
+            srcTop = 0f,
+            srcRight = image.width.toFloat(),
+            srcBottom = image.height.toFloat(),
+            dstLeft = dst.left,
+            dstTop = dst.top,
+            dstRight = dst.right,
+            dstBottom = dst.bottom,
+            samplingMode = SamplingMode.DEFAULT,
+            paint = paint,
+            strict = true
         )
     }
 
     fun drawImageRect(image: Image, src: Rect, dst: Rect): Canvas {
-        return drawImageRect(image, src, dst, SamplingMode.DEFAULT, null, true)
+        return drawImageRect(
+            image = image,
+            srcLeft = src.left,
+            srcTop = src.top,
+            srcRight = src.right,
+            srcBottom = src.bottom,
+            dstLeft = dst.left,
+            dstTop = dst.top,
+            dstRight = dst.right,
+            dstBottom = dst.bottom,
+            samplingMode = SamplingMode.DEFAULT,
+            paint = null,
+            strict = true
+        )
     }
 
     fun drawImageRect(image: Image, src: Rect, dst: Rect, paint: Paint?): Canvas {
-        return drawImageRect(image, src, dst, SamplingMode.DEFAULT, paint, true)
+        return drawImageRect(
+            image = image,
+            srcLeft = src.left,
+            srcTop = src.top,
+            srcRight = src.right,
+            srcBottom = src.bottom,
+            dstLeft = dst.left,
+            dstTop = dst.top,
+            dstRight = dst.right,
+            dstBottom = dst.bottom,
+            samplingMode = SamplingMode.DEFAULT,
+            paint = paint,
+            strict = true
+        )
     }
 
     fun drawImageRect(image: Image, src: Rect, dst: Rect, paint: Paint?, strict: Boolean): Canvas {
-        return drawImageRect(image, src, dst, SamplingMode.DEFAULT, paint, strict)
+        return drawImageRect(
+            image = image,
+            srcLeft = src.left,
+            srcTop = src.top,
+            srcRight = src.right,
+            srcBottom = src.bottom,
+            dstLeft = dst.left,
+            dstTop = dst.top,
+            dstRight = dst.right,
+            dstBottom = dst.bottom,
+            samplingMode = SamplingMode.DEFAULT,
+            paint = paint,
+            strict = strict
+        )
     }
 
     fun drawImageRect(
         image: Image,
-        src: Rect,
-        dst: Rect,
+        srcLeft: Float,
+        srcTop: Float,
+        srcRight: Float,
+        srcBottom: Float,
+        dstLeft: Float,
+        dstTop: Float,
+        dstRight: Float,
+        dstBottom: Float,
         samplingMode: SamplingMode,
         paint: Paint?,
         strict: Boolean
@@ -469,14 +568,14 @@ open class Canvas internal constructor(ptr: NativePointer, managed: Boolean, int
             _nDrawImageRect(
                 _ptr,
                 getPtr(image),
-                src.left,
-                src.top,
-                src.right,
-                src.bottom,
-                dst.left,
-                dst.top,
-                dst.right,
-                dst.bottom,
+                srcLeft,
+                srcTop,
+                srcRight,
+                srcBottom,
+                dstLeft,
+                dstTop,
+                dstRight,
+                dstBottom,
                 samplingMode._packedInt1(),
                 samplingMode._packedInt2(),
                 getPtr(paint),
@@ -488,6 +587,30 @@ open class Canvas internal constructor(ptr: NativePointer, managed: Boolean, int
             reachabilityBarrier(this)
         }
         return this
+    }
+
+    fun drawImageRect(
+        image: Image,
+        src: Rect,
+        dst: Rect,
+        samplingMode: SamplingMode,
+        paint: Paint?,
+        strict: Boolean
+    ): Canvas {
+        return drawImageRect(
+            image = image,
+            srcLeft = src.left,
+            srcTop = src.top,
+            srcRight = src.right,
+            srcBottom = src.bottom,
+            dstLeft = dst.left,
+            dstTop = dst.top,
+            dstRight = dst.right,
+            dstBottom = dst.bottom,
+            samplingMode = samplingMode,
+            paint = paint,
+            strict = strict
+        )
     }
 
     fun drawImageNine(image: Image, center: IRect, dst: Rect, filterMode: FilterMode, paint: Paint?): Canvas {
@@ -1010,41 +1133,69 @@ open class Canvas internal constructor(ptr: NativePointer, managed: Boolean, int
         get() = localToDevice.asMatrix33()
 
     fun clipRect(r: Rect, mode: ClipMode, antiAlias: Boolean): Canvas {
+      return clipRect(r.left, r.top, r.right, r.bottom, mode, antiAlias)
+    }
+
+    fun clipRect(left: Float, top: Float, right: Float, bottom: Float, mode: ClipMode, antiAlias: Boolean): Canvas {
         Stats.onNativeCall()
-        _nClipRect(_ptr, r.left, r.top, r.right, r.bottom, mode.ordinal, antiAlias)
+        _nClipRect(_ptr, left, top, right, bottom, mode.ordinal, antiAlias)
         return this
     }
 
     fun clipRect(r: Rect, mode: ClipMode): Canvas {
-        return clipRect(r, mode, false)
+        return clipRect(r.left, r.top, r.right, r.bottom, mode, false)
     }
 
     fun clipRect(r: Rect, antiAlias: Boolean): Canvas {
-        return clipRect(r, ClipMode.INTERSECT, antiAlias)
+        return clipRect(r.left, r.top, r.right, r.bottom, ClipMode.INTERSECT, antiAlias)
+    }
+
+    fun clipRect(left: Float, top: Float, right: Float, bottom: Float, antiAlias: Boolean): Canvas {
+        return clipRect(left, top, right, bottom, ClipMode.INTERSECT, antiAlias)
     }
 
     fun clipRect(r: Rect): Canvas {
-        return clipRect(r, ClipMode.INTERSECT, false)
+        return clipRect(r.left, r.top, r.right, r.bottom, ClipMode.INTERSECT, false)
     }
 
     fun clipRRect(r: RRect, mode: ClipMode, antiAlias: Boolean): Canvas {
+        return clipRRect(r.left, r.top, r.right, r.bottom, r.radii, mode, antiAlias)
+    }
+
+    fun clipRRect(
+        left: Float,
+        top: Float,
+        right: Float,
+        bottom: Float,
+        radii: FloatArray,
+        mode: ClipMode,
+        antiAlias: Boolean
+    ): Canvas {
         Stats.onNativeCall()
         interopScope {
-            _nClipRRect(_ptr, r.left, r.top, r.right, r.bottom, toInterop(r.radii), r.radii.size, mode.ordinal, antiAlias)
+            _nClipRRect(_ptr, left, top, right, bottom, toInterop(radii), radii.size, mode.ordinal, antiAlias)
         }
         return this
     }
 
     fun clipRRect(r: RRect, mode: ClipMode): Canvas {
-        return clipRRect(r, mode, false)
+        return clipRRect(r.left, r.top, r.right, r.bottom, r.radii, mode, false)
+    }
+
+    fun clipRRect(left: Float, top: Float, right: Float, bottom: Float, radii: FloatArray, mode: ClipMode): Canvas {
+        return clipRRect(left, top, right, bottom, radii, mode, false)
     }
 
     fun clipRRect(r: RRect, antiAlias: Boolean): Canvas {
-        return clipRRect(r, ClipMode.INTERSECT, antiAlias)
+        return clipRRect(r.left, r.top, r.right, r.bottom, r.radii, ClipMode.INTERSECT, antiAlias)
     }
 
-    fun clipRRect(r: RRect): Canvas {
-        return clipRRect(r, ClipMode.INTERSECT, false)
+    fun clipRRect(left: Float, top: Float, right: Float, bottom: Float, radii: FloatArray, antiAlias: Boolean): Canvas {
+        return clipRRect(left, top, right, bottom, radii, ClipMode.INTERSECT, antiAlias)
+    }
+
+    fun clipRRect(left: Float, top: Float, right: Float, bottom: Float, radii: FloatArray): Canvas {
+        return clipRRect(left, top, right, bottom, radii, ClipMode.INTERSECT, false)
     }
 
     fun clipPath(p: Path, mode: ClipMode, antiAlias: Boolean): Canvas {
@@ -1439,27 +1590,21 @@ open class Canvas internal constructor(ptr: NativePointer, managed: Boolean, int
 
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nGetFinalizer")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nGetFinalizer")
 private external fun Canvas_nGetFinalizer(): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nMakeFromBitmap")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nMakeFromBitmap")
 private external fun _nMakeFromBitmap(bitmapPtr: NativePointer, flags: Int, pixelGeometry: Int): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawPoint")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawPoint")
 private external fun _nDrawPoint(ptr: NativePointer, x: Float, y: Float, paintPtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawPoints")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawPoints")
 private external fun _nDrawPoints(ptr: NativePointer, mode: Int, coordsCount: Int, coords: InteropPointer, paintPtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawLine")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawLine")
 private external fun _nDrawLine(ptr: NativePointer, x0: Float, y0: Float, x1: Float, y1: Float, paintPtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawArc")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawArc")
 private external fun _nDrawArc(
     ptr: NativePointer,
     left: Float,
@@ -1473,15 +1618,12 @@ private external fun _nDrawArc(
 )
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawRect")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawRect")
 private external fun _nDrawRect(ptr: NativePointer, left: Float, top: Float, right: Float, bottom: Float, paintPtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawOval")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawOval")
 private external fun _nDrawOval(ptr: NativePointer, left: Float, top: Float, right: Float, bottom: Float, paint: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawRRect")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawRRect")
 private external fun _nDrawRRect(
     ptr: NativePointer,
     left: Float,
@@ -1495,7 +1637,6 @@ private external fun _nDrawRRect(
 
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawDRRect")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawDRRect")
 private external fun _nDrawDRRect(
     ptr: NativePointer,
     ol: Float,
@@ -1515,11 +1656,9 @@ private external fun _nDrawDRRect(
 
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawPath")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawPath")
 private external fun _nDrawPath(ptr: NativePointer, nativePath: NativePointer, paintPtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawImageRect")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawImageRect")
 private external fun _nDrawImageRect(
     ptr: NativePointer,
     nativeImage: NativePointer,
@@ -1538,7 +1677,6 @@ private external fun _nDrawImageRect(
 )
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawImageNine")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawImageNine")
 private external fun _nDrawImageNine(
     ptr: NativePointer,
     nativeImage: NativePointer,
@@ -1555,23 +1693,18 @@ private external fun _nDrawImageNine(
 )
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawRegion")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawRegion")
 private external fun _nDrawRegion(ptr: NativePointer, nativeRegion: NativePointer, paintPtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawString")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawString")
 private external fun _nDrawString(ptr: NativePointer, string: InteropPointer, x: Float, y: Float, font: NativePointer, paint: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawTextBlob")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawTextBlob")
 private external fun _nDrawTextBlob(ptr: NativePointer, blob: NativePointer, x: Float, y: Float, paint: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawPicture")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawPicture")
 private external fun _nDrawPicture(ptr: NativePointer, picturePtr: NativePointer, matrix: InteropPointer, paintPtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawVertices")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawVertices")
 private external fun _nDrawVertices(
     ptr: NativePointer,
     verticesMode: Int,
@@ -1587,7 +1720,6 @@ private external fun _nDrawVertices(
 
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawPatch")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawPatch")
 private external fun _nDrawPatch(
     ptr: NativePointer,
     cubics: InteropPointer,
@@ -1599,31 +1731,24 @@ private external fun _nDrawPatch(
 
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawDrawable")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawDrawable")
 private external fun _nDrawDrawable(ptr: NativePointer, drawablePrt: NativePointer, matrix: InteropPointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nClear")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nClear")
 private external fun _nClear(ptr: NativePointer, color: Int)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nDrawPaint")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nDrawPaint")
 private external fun _nDrawPaint(ptr: NativePointer, paintPtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nSetMatrix")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nSetMatrix")
 private external fun _nSetMatrix(ptr: NativePointer, matrix: InteropPointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nGetLocalToDevice")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nGetLocalToDevice")
 private external fun _nGetLocalToDevice(ptr: NativePointer, resultFloats: InteropPointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nResetMatrix")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nResetMatrix")
 private external fun _nResetMatrix(ptr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nClipRect")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nClipRect")
 private external fun _nClipRect(
     ptr: NativePointer,
     left: Float,
@@ -1635,7 +1760,6 @@ private external fun _nClipRect(
 )
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nClipRRect")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nClipRRect")
 private external fun _nClipRRect(
     ptr: NativePointer,
     left: Float,
@@ -1650,55 +1774,42 @@ private external fun _nClipRRect(
 
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nClipPath")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nClipPath")
 private external fun _nClipPath(ptr: NativePointer, nativePath: NativePointer, mode: Int, antiAlias: Boolean)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nClipRegion")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nClipRegion")
 private external fun _nClipRegion(ptr: NativePointer, nativeRegion: NativePointer, mode: Int)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nTranslate")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nTranslate")
 private external fun _nTranslate(ptr: NativePointer, dx: Float, dy: Float)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nScale")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nScale")
 private external fun _nScale(ptr: NativePointer, sx: Float, sy: Float)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nRotate")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nRotate")
 private external fun _nRotate(ptr: NativePointer, deg: Float, x: Float, y: Float)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nSkew")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nSkew")
 private external fun _nSkew(ptr: NativePointer, sx: Float, sy: Float)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nConcat")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nConcat")
 private external fun _nConcat(ptr: NativePointer, matrix: InteropPointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nConcat44")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nConcat44")
 private external fun _nConcat44(ptr: NativePointer, matrix: InteropPointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nReadPixels")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nReadPixels")
 private external fun _nReadPixels(ptr: NativePointer, bitmapPtr: NativePointer, srcX: Int, srcY: Int): Boolean
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nWritePixels")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nWritePixels")
 private external fun _nWritePixels(ptr: NativePointer, bitmapPtr: NativePointer, x: Int, y: Int): Boolean
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nSave")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nSave")
 private external fun _nSave(ptr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nSaveLayer")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nSaveLayer")
 private external fun _nSaveLayer(ptr: NativePointer, paintPtr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nSaveLayerRect")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nSaveLayerRect")
 private external fun _nSaveLayerRect(
     ptr: NativePointer,
     left: Float,
@@ -1709,7 +1820,6 @@ private external fun _nSaveLayerRect(
 ): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nSaveLayerSaveLayerRec")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nSaveLayerSaveLayerRec")
 private external fun _nSaveLayerSaveLayerRec(
     ptr: NativePointer,
     paintPtr: NativePointer,
@@ -1719,7 +1829,6 @@ private external fun _nSaveLayerSaveLayerRec(
 ): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nSaveLayerSaveLayerRecRect")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nSaveLayerSaveLayerRecRect")
 private external fun _nSaveLayerSaveLayerRecRect(
     ptr: NativePointer,
     left: Float,
@@ -1733,13 +1842,10 @@ private external fun _nSaveLayerSaveLayerRecRect(
 ): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nGetSaveCount")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nGetSaveCount")
 private external fun _nGetSaveCount(ptr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nRestore")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nRestore")
 private external fun _nRestore(ptr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Canvas__1nRestoreToCount")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Canvas__1nRestoreToCount")
 private external fun _nRestoreToCount(ptr: NativePointer, saveCount: Int)

@@ -34,9 +34,19 @@ expect open class SkiaLayer {
     var transparency: Boolean
 
     /**
+     * The color, in ARGB format, with which the layer is cleared before rendering.
+     */
+    internal var backgroundColor: Int
+
+    /**
      * Underlying platform component.
      */
     val component: Any?
+
+    /**
+     * A list of rectangles to cut out from the rendered content; No content will be drawn inside them.
+     */
+    internal val cutoutRectangles: List<ClipRectangle>
 
     /**
      * Current view used for rendering.
@@ -55,9 +65,19 @@ expect open class SkiaLayer {
     fun detach()
 
     /**
-     * Force redraw.
+     * Request redrawing of the content; The [renderDelegate] will be asked to re-render, and the result will be drawn
+     * on the screen.
+     *
+     * @param throttledToVsync Whether to throttle calling [renderDelegate]'s [SkikoRenderDelegate.onRender] to at most
+     * once between vsync signals (if vsync is enabled).
      */
-    fun needRedraw()
+    fun needRender(throttledToVsync: Boolean = true)
+
+    @Deprecated(
+        message = "Use needRender() instead",
+        replaceWith = ReplaceWith("needRender()")
+    )
+    fun needRedraw()  // TODO: Remove this sometime after 2026-07
 
     /**
      * Drawing function.

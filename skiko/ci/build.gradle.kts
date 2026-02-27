@@ -15,6 +15,8 @@ val skikoArtifactIds: List<String> =
         SkikoArtifacts.jvmRuntimeArtifactIdFor(OS.Linux, Arch.Arm64),
         SkikoArtifacts.jvmRuntimeArtifactIdFor(OS.MacOS, Arch.X64),
         SkikoArtifacts.jvmRuntimeArtifactIdFor(OS.MacOS, Arch.Arm64),
+        SkikoArtifacts.jvmAdditionalRuntimeArtifactIdFor("angle", OS.Windows, Arch.X64),
+        SkikoArtifacts.jvmAdditionalRuntimeArtifactIdFor("angle", OS.Windows, Arch.Arm64),
         SkikoArtifacts.jsWasmArtifactId,
         SkikoArtifacts.jsArtifactId,
         SkikoArtifacts.wasmArtifactId,
@@ -32,7 +34,7 @@ val skikoArtifactIds: List<String> =
 
 val downloadSkikoArtifactsFromComposeDev by tasks.registering(DownloadFromSpaceMavenRepoTask::class) {
     modulesToDownload.set(skikoMavenModules(skiko.deployVersion))
-    spaceRepoUrl.set("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    spaceRepoUrl.set("https://packages.jetbrains.team/maven/p/cmp/dev")
 }
 
 val createGithubRelease by tasks.registering {
@@ -46,6 +48,7 @@ val createGithubRelease by tasks.registering {
         val repo = gh.getRepository(GITHUB_REPO)
         val release = repo.createRelease("v$githubVersion")
             .name("Version $githubVersion")
+            .generateReleaseNotes(true)
             .commitish(githubCommit)
             .create()
 
@@ -88,7 +91,7 @@ val uploadSkikoArtifactsToMavenCentral by tasks.registering(UploadToSonatypeTask
 
 fun Project.skikoMavenModules(version: String): Provider<List<ModuleToUpload>> =
     provider {
-        val artifactsDir = buildDir.resolve("skiko-artifacts")
+        val artifactsDir = layout.buildDirectory.dir("skiko-artifacts").get().asFile
 
         skikoArtifactIds.map { artifactId ->
             val skikoGroupId = "org.jetbrains.skiko"

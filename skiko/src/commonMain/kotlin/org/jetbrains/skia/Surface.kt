@@ -2,7 +2,6 @@ package org.jetbrains.skia
 
 import org.jetbrains.skia.impl.*
 import org.jetbrains.skia.impl.Library.Companion.staticLoad
-import org.jetbrains.skiko.RenderException
 
 class Surface : RefCnt {
     companion object {
@@ -757,15 +756,36 @@ class Surface : RefCnt {
      * @see [https://fiddle.skia.org/c/@Surface_makeImageSnapshot_2](https://fiddle.skia.org/c/@Surface_makeImageSnapshot_2)
      */
     fun makeImageSnapshot(area: IRect): Image? {
+        return makeImageSnapshot(area.left, area.top, area.right, area.bottom)
+    }
+
+    /**
+     *
+     * Like the no-parameter version, this returns an image of the current surface contents.
+     *
+     *
+     * This variant takes a rectangle specifying the subset of the surface that is of interest.
+     * These bounds will be sanitized before being used.
+     *
+     *
+     *  * If bounds extends beyond the surface, it will be trimmed to just the intersection of it and the surface.
+     *  * If bounds does not intersect the surface, then this returns null.
+     *  * If bounds == the surface, then this is the same as calling the no-parameter variant.
+     *
+     *
+     * @return Image initialized with Surface contents or null
+     * @see [https://fiddle.skia.org/c/@Surface_makeImageSnapshot_2](https://fiddle.skia.org/c/@Surface_makeImageSnapshot_2)
+     */
+    fun makeImageSnapshot(left: Int, top: Int, right: Int, bottom: Int): Image? {
         return try {
             Stats.onNativeCall()
             Image(
                 _nMakeImageSnapshotR(
                     _ptr,
-                    area.left,
-                    area.top,
-                    area.right,
-                    area.bottom
+                    left,
+                    top,
+                    right,
+                    bottom
                 )
             )
         } finally {
@@ -1003,27 +1023,21 @@ class Surface : RefCnt {
 }
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nGetWidth")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nGetWidth")
 private external fun Surface_nGetWidth(ptr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nGetHeight")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nGetHeight")
 private external fun Surface_nGetHeight(ptr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nGetImageInfo")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nGetImageInfo")
 private external fun Surface_nGetImageInfo(ptr: NativePointer, imageInfo: InteropPointer, colorSpacePtrs: InteropPointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nReadPixels")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nReadPixels")
 private external fun Surface_nReadPixels(ptr: NativePointer, bitmapPtr: NativePointer, srcX: Int, srcY: Int): Boolean
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nWritePixels")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nWritePixels")
 private external fun Surface_nWritePixels(ptr: NativePointer, bitmapPtr: NativePointer, x: Int, y: Int)
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nMakeRasterDirect")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nMakeRasterDirect")
 private external fun _nMakeRasterDirect(
     width: Int,
     height: Int,
@@ -1037,11 +1051,9 @@ private external fun _nMakeRasterDirect(
 
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nMakeRasterDirectWithPixmap")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nMakeRasterDirectWithPixmap")
 private external fun _nMakeRasterDirectWithPixmap(pixmapPtr: NativePointer, surfaceProps: InteropPointer): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nMakeRaster")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nMakeRaster")
 private external fun _nMakeRaster(
     width: Int,
     height: Int,
@@ -1054,11 +1066,9 @@ private external fun _nMakeRaster(
 
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nMakeRasterN32Premul")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nMakeRasterN32Premul")
 private external fun _nMakeRasterN32Premul(width: Int, height: Int): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nMakeFromBackendRenderTarget")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nMakeFromBackendRenderTarget")
 private external fun _nMakeFromBackendRenderTarget(
     pContext: NativePointer,
     pBackendRenderTarget: NativePointer,
@@ -1069,7 +1079,6 @@ private external fun _nMakeFromBackendRenderTarget(
 ): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nMakeFromMTKView")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nMakeFromMTKView")
 private external fun _nMakeFromMTKView(
     contextPtr: NativePointer,
     mtkViewPtr: NativePointer,
@@ -1081,7 +1090,6 @@ private external fun _nMakeFromMTKView(
 ): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nMakeRenderTarget")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nMakeRenderTarget")
 private external fun _nMakeRenderTarget(
     contextPtr: NativePointer,
     budgeted: Boolean,
@@ -1098,27 +1106,21 @@ private external fun _nMakeRenderTarget(
 
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nMakeNull")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nMakeNull")
 private external fun _nMakeNull(width: Int, height: Int): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nGenerationId")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nGenerationId")
 private external fun _nGenerationId(ptr: NativePointer): Int
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nNotifyContentWillChange")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nNotifyContentWillChange")
 private external fun _nNotifyContentWillChange(ptr: NativePointer, mode: Int)
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nGetRecordingContext")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nGetRecordingContext")
 private external fun _nGetRecordingContext(ptr: NativePointer): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nGetCanvas")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nGetCanvas")
 private external fun _nGetCanvas(ptr: NativePointer): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nMakeSurfaceI")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nMakeSurfaceI")
 private external fun _nMakeSurfaceI(
     ptr: NativePointer,
     width: Int,
@@ -1130,33 +1132,25 @@ private external fun _nMakeSurfaceI(
 
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nMakeSurface")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nMakeSurface")
 private external fun _nMakeSurface(ptr: NativePointer, width: Int, height: Int): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nMakeImageSnapshot")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nMakeImageSnapshot")
 private external fun _nMakeImageSnapshot(ptr: NativePointer): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nMakeImageSnapshotR")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nMakeImageSnapshotR")
 private external fun _nMakeImageSnapshotR(ptr: NativePointer, left: Int, top: Int, right: Int, bottom: Int): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nDraw")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nDraw")
 private external fun _nDraw(ptr: NativePointer, canvasPtr: NativePointer, x: Float, y: Float, samplingModeValue1: Int, samplingModeValue2: Int, paintPtr: NativePointer)
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nPeekPixels")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nPeekPixels")
 private external fun _nPeekPixels(ptr: NativePointer, pixmapPtr: NativePointer): Boolean
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nReadPixelsToPixmap")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nReadPixelsToPixmap")
 private external fun _nReadPixelsToPixmap(ptr: NativePointer, pixmapPtr: NativePointer, srcX: Int, srcY: Int): Boolean
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nWritePixelsFromPixmap")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nWritePixelsFromPixmap")
 private external fun _nWritePixelsFromPixmap(ptr: NativePointer, pixmapPtr: NativePointer, x: Int, y: Int)
 
 @ExternalSymbolName("org_jetbrains_skia_Surface__1nUnique")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_Surface__1nUnique")
 private external fun _nUnique(ptr: NativePointer): Boolean

@@ -1,3 +1,5 @@
+@file:Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE") // https://youtrack.jetbrains.com/issue/KT-50727
+
 package org.jetbrains.skia
 
 import org.jetbrains.skia.impl.InteropPointer
@@ -14,9 +16,7 @@ internal actual fun PaintFilterCanvas.doInit(ptr: NativePointer) {
 }
 
 @ExternalSymbolName("org_jetbrains_skia_PaintFilterCanvas__1nInit")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_PaintFilterCanvas__1nInit")
 internal external fun PaintFilterCanvas_nInit(ptr: NativePointer, onFilter: InteropPointer)
 
 @ExternalSymbolName("org_jetbrains_skia_PaintFilterCanvas__1nGetOnFilterPaint")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_PaintFilterCanvas__1nGetOnFilterPaint")
 internal external fun PaintFilterCanvas_nGetOnFilterPaint(ptr: NativePointer): NativePointer

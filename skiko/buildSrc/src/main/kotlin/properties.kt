@@ -10,7 +10,7 @@ enum class OS(
     Linux("linux", arrayOf()),
     Android("android", arrayOf()),
     Windows("windows", arrayOf()),
-    MacOS("macos", arrayOf("-mmacosx-version-min=10.13")),
+    MacOS("macos", arrayOf("-mmacosx-version-min=11.0")),
     Wasm("wasm", arrayOf()),
     IOS("ios", arrayOf()),
     TVOS("tvos", arrayOf())
@@ -36,16 +36,12 @@ val OS.isCompatibleWithHost: Boolean
         OS.Android -> true
     }
 
-fun compilerForTarget(os: OS, arch: Arch, isJvm: Boolean = false): String =
+fun compilerForTarget(os: OS, arch: Arch): String =
     when (os) {
         // TODO: Use clang++ for all Linux targets
         OS.Linux -> when (arch) {
             Arch.X64 -> "g++"
-            Arch.Arm64 -> if (isJvm) {
-                "clang++"
-            } else {
-                if (hostArch == Arch.Arm64) "g++" else "aarch64-linux-gnu-g++"
-            }
+            Arch.Arm64 -> if (hostArch == Arch.Arm64) "g++" else "aarch64-linux-gnu-g++"
             Arch.Wasm -> "Unexpected combination: $os & $arch"
         }
         OS.Android -> "clang++"
@@ -54,8 +50,8 @@ fun compilerForTarget(os: OS, arch: Arch, isJvm: Boolean = false): String =
         OS.Wasm -> if (Os.isFamily(Os.FAMILY_WINDOWS)) "emcc.bat" else "emcc"
     }
 
-fun linkerForTarget(os: OS, arch: Arch, isJvm: Boolean = false): String =
-    if (os.isWindows) "lld-link.exe" else compilerForTarget(os, arch, isJvm)
+fun linkerForTarget(os: OS, arch: Arch): String =
+    if (os.isWindows) "lld-link.exe" else compilerForTarget(os, arch)
 
 val OS.dynamicLibExt: String
     get() = when (this) {
@@ -161,17 +157,50 @@ class SkikoProperties(private val myProject: Project) {
     val visualStudioBuildToolsDir: File?
         get() = System.getenv()["SKIKO_VSBT_PATH"]?.let { File(it) }?.takeIf { it.isDirectory }
 
+    /**
+     * Skia-pack repository root directory for building Skia from source.
+     *
+     * Property naming conventions:
+     * - Gradle property: `-Pskia.pack.dir=...` (kebab-case, Gradle convention)
+     * - Kotlin accessor: `skiaPackDir` (camelCase, Kotlin convention)
+     * - Environment variable: `SKIA_PACK_DIR`
+     *
+     * Usage: `-Pskia.pack.dir=/path/to/skia-pack`
+     *
+     * Note: Must point to skia-pack repository root containing script/ with Python build scripts.
+     */
+    // todo: make compatible with the configuration cache
+    val skiaPackDir: File?
+        get() = (System.getenv()["SKIA_PACK_DIR"] ?: System.getProperty("skia.pack.dir") ?: myProject.findProperty("skia.pack.dir")
+            ?.toString())?.let { skiaPackDirProp ->
+                val file = File(skiaPackDirProp)
+                if (!file.isDirectory) throw (GradleException("\"skia.pack.dir\" property was explicitly set to ${skiaPackDirProp} which is not resolved as a directory"))
+                file
+            }
+
+    /**
+     * Skia source directory for publishing.
+     *
+     * Property naming conventions:
+     * - Gradle property: `-Pskia.dir=...` (kebab-case, Gradle convention)
+     * - Kotlin accessor: `skiaDir` (camelCase, Kotlin convention)
+     * - Environment variable: `SKIA_DIR`
+     *
+     * Usage: `-Pskia.dir=/path/to/skia`
+     *
+     * Note: Must point to directory containing built Skia source code and headers.
+     */
     // todo: make compatible with the configuration cache
     val skiaDir: File?
         get() = (System.getenv()["SKIA_DIR"] ?: System.getProperty("skia.dir") ?: myProject.findProperty("skia.dir")
             ?.toString())?.let { skiaDirProp ->
                 val file = File(skiaDirProp)
-                if (!file.isDirectory) throw (GradleException("\"skiko.skiaDir\" property was explicitly set to ${skiaDirProp} which is not resolved as a directory"))
+                if (!file.isDirectory) throw (GradleException("\"skia.dir\" property was explicitly set to ${skiaDirProp} which is not resolved as a directory"))
                 file
             }
 
     val composeRepoUrl: String
-        get() = System.getenv("COMPOSE_REPO_URL") ?: "https://maven.pkg.jetbrains.space/public/p/compose/dev"
+        get() = System.getenv("COMPOSE_REPO_URL") ?: "https://packages.jetbrains.team/maven/p/cmp/dev"
 
     val composeRepoUserName: String
         get() = System.getenv("COMPOSE_REPO_USERNAME") ?: ""
@@ -193,6 +222,40 @@ class SkikoProperties(private val myProject: Project) {
 
     val dependenciesDir: File
         get() = myProject.rootProject.projectDir.resolve("dependencies")
+
+    val skiaTarget: SkiaTarget
+        get() {
+            val targetString = System.getenv("SKIA_TARGET")
+                ?: myProject.findProperty("skia.target")?.toString()
+                ?: hostOs.id  // Default to current OS
+            return SkiaTarget.fromString(targetString)
+        }
+
+    val skiaVersionFromEnvOrProperties: String
+        get() {
+            // Environment variable takes precedence
+            System.getenv("SKIA_VERSION")?.let { return it }
+
+            // Fall back to gradle.properties
+            return myProject.property("dependencies.skia").toString()
+        }
+}
+
+object SkikoGradleProperties {
+    const val AWT_ENABLED = "skiko.awt.enabled"
+    const val WASM_ENABLED = "skiko.wasm.enabled"
+    const val ANDROID_ENABLED = "skiko.android.enabled"
+    const val NATIVE_ENABLED = "skiko.native.enabled"
+    const val NATIVE_IOS = "skiko.native.ios"
+    const val NATIVE_IOS_ARM64 = "skiko.native.ios.arm64.enabled"
+    const val NATIVE_IOS_SIMULATOR_ARM64 = "skiko.native.ios.simulatorArm64.enabled"
+    const val NATIVE_IOS_X64 = "skiko.native.ios.x64.enabled"
+    const val NATIVE_TVOS = "skiko.native.tvos"
+    const val NATIVE_TVOS_ARM64 = "skiko.native.tvos.arm64.enabled"
+    const val NATIVE_TVOS_SIMULATOR_ARM64 = "skiko.native.tvos.simulatorArm64.enabled"
+    const val NATIVE_TVOS_X64 = "skiko.native.tvos.x64.enabled"
+    const val NATIVE_MAC = "skiko.native.mac.enabled"
+    const val NATIVE_LINUX = "skiko.native.linux.enabled"
 }
 
 object SkikoArtifacts {
@@ -200,6 +263,7 @@ object SkikoArtifacts {
     // names are also used in samples, e.g. samples/SkijaInjectSample/build.gradle
     val commonArtifactId = "skiko"
     val jvmArtifactId = "skiko-awt"
+    val jvmRuntimeArtifactId = "skiko-awt-runtime"
     // an artifact (klib) for k/js targets
     val jsArtifactId = "skiko-js"
     // an artifact (klib) for k/wasm targets
@@ -211,6 +275,8 @@ object SkikoArtifacts {
             "skiko-android-runtime-${arch.id}"
         else
             "skiko-awt-runtime-${targetId(os, arch)}"
+    fun jvmAdditionalRuntimeArtifactIdFor(name: String, os: OS, arch: Arch) =
+        "skiko-awt-runtime-$name-${os.id}-${arch.id}"
     // Using custom name like skiko-<Os>-<Arch> (with a dash)
     // does not seem possible (at least without adding a dash to a target's tasks),
     // so we're using the default naming pattern instead.

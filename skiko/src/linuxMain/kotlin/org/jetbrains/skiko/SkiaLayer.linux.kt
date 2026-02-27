@@ -15,11 +15,21 @@ actual open class SkiaLayer  {
     actual var transparency: Boolean
         get() = TODO("Not yet implemented")
         set(value) {}
+    internal actual var backgroundColor: Int
+        get() = TODO("Not yet implemented")
+        set(value) {}
     actual val component: Any?
         get() = TODO("Not yet implemented")
-    actual fun needRedraw() {
+    internal actual val cutoutRectangles: List<ClipRectangle>
+        get() = emptyList()
+    actual fun needRender(throttledToVsync: Boolean) {
         TODO("unimplemented")
     }
+    @Deprecated(
+        message = "Use needRender() instead",
+        replaceWith = ReplaceWith("needRender()")
+    )
+    actual fun needRedraw() = needRender()
     actual fun attachTo(container: Any) {
         TODO("unimplemented")
     }

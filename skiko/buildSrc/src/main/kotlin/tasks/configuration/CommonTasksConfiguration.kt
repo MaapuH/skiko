@@ -6,16 +6,23 @@ import SkiaBuildType
 import SkikoProperties
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
-import org.gradle.kotlin.dsl.get
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool
 import registerSkikoTask
+import skiaVersion
 import supportAndroid
-import supportWasm
+import supportAwt
+import supportNativeIosArm64
+import supportNativeIosSimulatorArm64
+import supportNativeIosX64
+import supportNativeLinux
+import supportNativeMac
+import supportNativeTvosArm64
+import supportNativeTvosSimulatorArm64
+import supportNativeTvosX64
+import supportWeb
 import toTitleCase
 import java.io.File
-import skiaVersion
-import supportNativeLinux
 
 fun skiaHeadersDirs(skiaDir: File): List<File> =
     listOf(
@@ -28,6 +35,7 @@ fun skiaHeadersDirs(skiaDir: File): List<File> =
         skiaDir.resolve("include/utils"),
         skiaDir.resolve("include/codec"),
         skiaDir.resolve("include/svg"),
+        skiaDir.resolve("modules/jsonreader"),
         skiaDir.resolve("modules/skottie/include"),
         skiaDir.resolve("modules/skparagraph/include"),
         skiaDir.resolve("modules/skshaper/include"),
@@ -57,13 +65,15 @@ fun skiaPreprocessorFlags(os: OS, buildType: SkiaBuildType): Array<String> {
         "-DSK_SHAPER_UNICODE_AVAILABLE",
         "-DSK_SUPPORT_OPENCL=0",
         "-DSK_UNICODE_AVAILABLE",
-        "-DU_DISABLE_RENAMING",
         "-DSK_USING_THIRD_PARTY_ICU",
         // For ICU symbols renaming:
         "-DU_DISABLE_RENAMING=0",
         "-DU_DISABLE_VERSION_SUFFIX=1",
         "-DU_HAVE_LIB_SUFFIX=1",
         "-DU_LIB_SUFFIX_C_NAME=_skiko",
+
+        // Temporary (m144) skia flag for migration to SkPathBuilder
+        "-USK_HIDE_PATH_EDIT_METHODS",
         *buildType.flags
     )
 
@@ -91,7 +101,8 @@ fun skiaPreprocessorFlags(os: OS, buildType: SkiaBuildType): Array<String> {
             "-DWIN32_LEAN_AND_MEAN",
             "-DNOMINMAX",
             "-DSK_GAMMA_APPLY_TO_A8",
-            "-DSK_DIRECT3D"
+            "-DSK_DIRECT3D",
+            "-DSK_ANGLE"
         )
         OS.Linux -> listOf(
             "-DSK_BUILD_FOR_LINUX",
@@ -104,14 +115,13 @@ fun skiaPreprocessorFlags(os: OS, buildType: SkiaBuildType): Array<String> {
         OS.Android -> listOf(
             "-DSK_BUILD_FOR_ANDROID"
         )
-        else -> TODO("unsupported $os")
     }
 
     return (base + perOs).toTypedArray()
 }
 
 fun Project.configureSignAndPublishDependencies() {
-    if (supportWasm) {
+    if (supportWeb) {
         tasks.configureEach {
             val publishJs = "publishJsPublicationTo"
             val publishWasm = "publishSkikoWasmRuntimePublicationTo"
@@ -173,6 +183,131 @@ fun Project.configureSignAndPublishDependencies() {
                     dependsOn(signLinuxArm64Publication)
                     dependsOn(signLinuxX64Publication)
                 }
+            }
+        }
+    }
+
+    if (supportNativeMac) {
+        val publishMacosArm64 = "publishMacosArm64PublicationTo"
+        val publishMacosX64 = "publishMacosX64PublicationTo"
+        val signMacosArm64 = "signMacosArm64Publication"
+        val signMacosX64 = "signMacosX64Publication"
+
+        tasks.configureEach {
+            when {
+                name.startsWith(publishMacosArm64) -> {
+                    dependsOn(signMacosArm64)
+                    dependsOn(signMacosX64)
+                }
+                name.startsWith(publishMacosX64) -> {
+                    dependsOn(signMacosArm64)
+                    dependsOn(signMacosX64)
+                }
+            }
+        }
+    }
+
+    // iOS family
+    if (supportNativeIosArm64 || supportNativeIosSimulatorArm64 || supportNativeIosX64) {
+        val publishIosArm64 = "publishIosArm64PublicationTo"
+        val publishIosSimArm64 = "publishIosSimulatorArm64PublicationTo"
+        val publishIosX64 = "publishIosX64PublicationTo"
+        val signIosArm64 = "signIosArm64Publication"
+        val signIosSimArm64 = "signIosSimulatorArm64Publication"
+        val signIosX64 = "signIosX64Publication"
+
+        tasks.configureEach {
+            when {
+                name.startsWith(publishIosArm64) -> {
+                    if (supportNativeIosArm64) dependsOn(signIosArm64)
+                    if (supportNativeIosSimulatorArm64) dependsOn(signIosSimArm64)
+                    if (supportNativeIosX64) dependsOn(signIosX64)
+                }
+                name.startsWith(publishIosSimArm64) -> {
+                    if (supportNativeIosArm64) dependsOn(signIosArm64)
+                    if (supportNativeIosSimulatorArm64) dependsOn(signIosSimArm64)
+                    if (supportNativeIosX64) dependsOn(signIosX64)
+                }
+                name.startsWith(publishIosX64) -> {
+                    if (supportNativeIosArm64) dependsOn(signIosArm64)
+                    if (supportNativeIosSimulatorArm64) dependsOn(signIosSimArm64)
+                    if (supportNativeIosX64) dependsOn(signIosX64)
+                }
+            }
+        }
+    }
+
+    // tvOS family
+    if (supportNativeTvosArm64 || supportNativeTvosSimulatorArm64 || supportNativeTvosX64) {
+        val publishTvosArm64 = "publishTvosArm64PublicationTo"
+        val publishTvosSimArm64 = "publishTvosSimulatorArm64PublicationTo"
+        val publishTvosX64 = "publishTvosX64PublicationTo"
+        val signTvosArm64 = "signTvosArm64Publication"
+        val signTvosSimArm64 = "signTvosSimulatorArm64Publication"
+        val signTvosX64 = "signTvosX64Publication"
+
+        tasks.configureEach {
+            when {
+                name.startsWith(publishTvosArm64) -> {
+                    if (supportNativeTvosArm64) dependsOn(signTvosArm64)
+                    if (supportNativeTvosSimulatorArm64) dependsOn(signTvosSimArm64)
+                    if (supportNativeTvosX64) dependsOn(signTvosX64)
+                }
+                name.startsWith(publishTvosSimArm64) -> {
+                    if (supportNativeTvosArm64) dependsOn(signTvosArm64)
+                    if (supportNativeTvosSimulatorArm64) dependsOn(signTvosSimArm64)
+                    if (supportNativeTvosX64) dependsOn(signTvosX64)
+                }
+                name.startsWith(publishTvosX64) -> {
+                    if (supportNativeTvosArm64) dependsOn(signTvosArm64)
+                    if (supportNativeTvosSimulatorArm64) dependsOn(signTvosSimArm64)
+                    if (supportNativeTvosX64) dependsOn(signTvosX64)
+                }
+            }
+        }
+    }
+
+    if (supportAwt) {
+        val publishJvmRuntimeAngleX64 = "publishSkikoJvmRuntimeAngleWindowsX64PublicationToComposeRepoRepository"
+        val publishJvmRuntimeAngleArm64 = "publishSkikoJvmRuntimeAngleWindowsArm64PublicationToComposeRepoRepository"
+        val signJvmRuntimeX64 = "signSkikoJvmRuntimeWindowsX64Publication"
+        val signJvmRuntimeArm64 = "signSkikoJvmRuntimeWindowsArm64Publication"
+
+        tasks.configureEach {
+            when {
+                name.startsWith(publishJvmRuntimeAngleX64) -> {
+                    dependsOn(signJvmRuntimeX64)
+                }
+                name.startsWith(publishJvmRuntimeAngleArm64) -> {
+                    dependsOn(signJvmRuntimeArm64)
+                }
+            }
+        }
+    }
+
+    // Cross-publication pairs due to shared javadoc: KotlinMultiplatform <-> AWT
+    tasks.configureEach {
+        val publishKmp = "publishKotlinMultiplatformPublicationTo"
+        val publishAwt = "publishAwtPublicationTo"
+        val publishAwtRuntimeElements = "publishAwtRuntimeElementsPublicationTo"
+        val signKmp = "signKotlinMultiplatformPublication"
+        val signAwt = "signAwtPublication"
+        val signAwtRuntimeElements = "signAwtRuntimeElementsPublication"
+
+        when {
+            name.startsWith(publishKmp) -> {
+                if (supportAwt) {
+                    dependsOn(signAwt)
+                    dependsOn(signAwtRuntimeElements)
+                }
+            }
+            name.startsWith(publishAwt) -> {
+                dependsOn(signKmp)
+                dependsOn(signAwtRuntimeElements)
+            }
+            name.startsWith(publishAwtRuntimeElements) -> {
+                dependsOn(signAwt)
+                dependsOn(signKmp)
             }
         }
     }

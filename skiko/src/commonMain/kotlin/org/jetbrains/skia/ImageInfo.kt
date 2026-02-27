@@ -42,8 +42,8 @@ class ImageInfo(val colorInfo: ColorInfo, val width: Int, val height: Int) {
     internal constructor(width: Int, height: Int, colorType: Int, alphaType: Int, colorSpace: NativePointer) : this(
         width,
         height,
-        ColorType.values()[colorType],
-        ColorAlphaType.values()[alphaType],
+        ColorType.entries[colorType],
+        ColorAlphaType.entries[alphaType],
         if (colorSpace == Native.NullPointer) null else ColorSpace(colorSpace)
     )
 
@@ -284,7 +284,7 @@ class ImageInfo(val colorInfo: ColorInfo, val width: Int, val height: Int) {
             return ImageInfo(ColorInfo(ColorType.UNKNOWN, ColorAlphaType.UNKNOWN, null), width, height)
         }
 
-        fun createUsing(
+        internal fun createUsing(
             _ptr: NativePointer,
             _nGetImageInfo: (_ptr: NativePointer, intArrayPointer: InteropPointer, nativePointerArrayPtr: InteropPointer) -> Unit
         ): ImageInfo {

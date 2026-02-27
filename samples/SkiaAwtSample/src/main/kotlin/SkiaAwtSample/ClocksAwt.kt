@@ -9,8 +9,14 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-open class ClocksAwt(private val scaleProvider: () -> Float) : SkikoRenderDelegate, MouseMotionListener {
-    constructor(layer: SkiaLayer) : this({ layer.contentScale })
+open class ClocksAwt(
+    private val scaleProvider: () -> Float,
+    private val renderProvider: () -> GraphicsApi = { GraphicsApi.UNKNOWN }
+) : SkikoRenderDelegate, MouseMotionListener {
+    constructor(layer: SkiaLayer) : this(
+        { layer.contentScale },
+        { layer.renderApi }
+    )
 
     private val typeface = FontMgr.default.makeFromFile("fonts/JetBrainsMono-Regular.ttf")
     private val font = Font(typeface, 13f).apply {
@@ -83,12 +89,15 @@ open class ClocksAwt(private val scaleProvider: () -> Float) : SkikoRenderDelega
         val y = ypos.toFloat()
         canvas.drawString(text, x, y, font, paint)
 
-        val style = ParagraphStyle().apply {
-            fontRastrSettings = FontRastrSettings(FontEdging.SUBPIXEL_ANTI_ALIAS, FontHinting.SLIGHT, true)
-        }
+        val style = ParagraphStyle()
         val paragraph = ParagraphBuilder(style, fontCollection)
-            .pushStyle(TextStyle().setColor(0xFF000000.toInt()))
-            .addText("JRE: ${System.getProperty("java.vendor")}, ${System.getProperty("java.runtime.version")} $currentSystemTheme")
+            .pushStyle(TextStyle().apply {
+                color = 0xFF000000.toInt()
+                fontEdging = FontEdging.SUBPIXEL_ANTI_ALIAS
+                fontHinting = FontHinting.SLIGHT
+                subpixel = true
+            })
+            .addText("Graphic API: ${renderProvider()}, JRE: ${System.getProperty("java.vendor")}, ${System.getProperty("java.runtime.version")} $currentSystemTheme")
             .popStyle()
             .build()
         paragraph.layout(Float.POSITIVE_INFINITY)

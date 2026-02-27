@@ -69,7 +69,7 @@ private fun pathSegmentFromIntArray(points: IntArray): PathSegment {
     val isClosedLineBit = ((context shr 6) and 1)
     val isClosed = isClosedBit != 0
 
-    return when (PathVerb.values()[verb]) {
+    return when (PathVerb.entries[verb]) {
         PathVerb.MOVE, PathVerb.CLOSE -> {
             PathSegment(verb, Float.fromBits(points[0]), Float.fromBits(points[1]), isClosed)
         }
@@ -126,13 +126,10 @@ private fun pathSegmentFromIntArray(points: IntArray): PathSegment {
 }
 
 @ExternalSymbolName("org_jetbrains_skia_PathSegmentIterator__1nGetFinalizer")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_PathSegmentIterator__1nGetFinalizer")
 private external fun PathSegmentIterator_nGetFinalizer(): NativePointer
 
 @ExternalSymbolName("org_jetbrains_skia_PathSegmentIterator__1nNext")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_PathSegmentIterator__1nNext")
 private external fun PathSegmentIterator_nNext(ptr: NativePointer, points: InteropPointer)
 
 @ExternalSymbolName("org_jetbrains_skia_PathSegmentIterator__1nMake")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_PathSegmentIterator__1nMake")
 private external fun _nMake(pathPtr: NativePointer, forceClose: Boolean): NativePointer

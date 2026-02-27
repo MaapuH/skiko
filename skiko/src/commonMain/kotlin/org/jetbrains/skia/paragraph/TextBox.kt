@@ -1,7 +1,6 @@
 package org.jetbrains.skia.paragraph
 
 import org.jetbrains.skia.ExternalSymbolName
-import org.jetbrains.skia.ModuleImport
 import org.jetbrains.skia.Rect
 import org.jetbrains.skia.impl.ArrayInteropDecoder
 import org.jetbrains.skia.impl.InteropPointer
@@ -12,7 +11,7 @@ class TextBox(val rect: Rect, direction: Direction) {
 
     constructor(l: Float, t: Float, r: Float, b: Float, direction: Int) : this(
         Rect.makeLTRB(l, t, r, b),
-        Direction.values().get(direction)
+        Direction.entries[direction]
     )
 
     val direction: Direction
@@ -41,7 +40,7 @@ class TextBox(val rect: Rect, direction: Direction) {
         _direction = direction
     }
 
-    companion object : ArrayInteropDecoder<TextBox> {
+    internal companion object : ArrayInteropDecoder<TextBox> {
         override fun getArrayElement(array: InteropPointer, index: Int): TextBox {
             val rect = FloatArray(4)
             val direction = IntArray(1)
@@ -60,11 +59,10 @@ class TextBox(val rect: Rect, direction: Direction) {
 }
 
 @ExternalSymbolName("org_jetbrains_skia_paragraph_TextBox__1nGetArraySize")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_paragraph_TextBox__1nGetArraySize")
 private external fun TextBox_nGetArraySize(array: InteropPointer): Int
+
 @ExternalSymbolName("org_jetbrains_skia_paragraph_TextBox__1nDisposeArray")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_paragraph_TextBox__1nDisposeArray")
 private external fun TextBox_nDisposeArray(array: InteropPointer)
+
 @ExternalSymbolName("org_jetbrains_skia_paragraph_TextBox__1nGetArrayElement")
-@ModuleImport("./skiko.mjs", "org_jetbrains_skia_paragraph_TextBox__1nGetArrayElement")
 private external fun TextBox_nGetArrayElement(array: InteropPointer, index: Int, rectArray: InteropPointer, directionArray: InteropPointer)

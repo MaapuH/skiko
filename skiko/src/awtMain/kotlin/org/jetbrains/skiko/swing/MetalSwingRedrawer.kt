@@ -42,7 +42,7 @@ internal class MetalSwingRedrawer(
     private var texturePtr: Long = 0
 
     init {
-        onContextInit()
+        onContextInit(context)
     }
 
     private val painter: SwingPainter = createSwingPainter(swingLayerProperties)
@@ -56,6 +56,14 @@ internal class MetalSwingRedrawer(
     }
 
     override fun onRender(g: Graphics2D, width: Int, height: Int, nanoTime: Long) {
+        if (width < 1 || height < 1) {
+            return
+        }
+
+        require(width <= adapter.maxTextureSize && height <= adapter.maxTextureSize) {
+            "Texture dimensions must be less than maximum allowed size: ${adapter.maxTextureSize}, got $width x $height"
+        }
+
         autoreleasepool {
             autoCloseScope {
                 texturePtr = makeMetalTexture(adapter.ptr, texturePtr, width, height)

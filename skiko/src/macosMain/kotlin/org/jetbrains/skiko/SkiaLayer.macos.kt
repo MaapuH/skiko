@@ -59,6 +59,15 @@ actual open class SkiaLayer {
         }
 
     /**
+     * The background color of the layer.
+     */
+    internal actual var backgroundColor: Int = Color.WHITE
+        set(value) {
+            field = value
+            needRender()
+        }
+
+    /**
      * Underlying [NSView]
      */
     lateinit var nsView: NSView
@@ -66,6 +75,9 @@ actual open class SkiaLayer {
 
     actual val component: Any?
         get() = this.nsView
+
+    internal actual val cutoutRectangles: List<ClipRectangle>
+        get() = emptyList()
 
     /**
      * Implements rendering logic and events processing.
@@ -85,13 +97,13 @@ actual open class SkiaLayer {
         @ObjCAction
         fun frameDidChange(notification: NSNotification) {
             redrawer?.syncBounds()
-            redrawer?.redrawImmediately()
+            redrawer?.renderImmediately()
         }
 
         @ObjCAction
         fun windowDidChangeBackingProperties(notification: NSNotification) {
             redrawer?.syncBounds()
-            redrawer?.redrawImmediately()
+            redrawer?.renderImmediately()
         }
 
         fun addObserver() {
@@ -127,7 +139,7 @@ actual open class SkiaLayer {
         nsViewObserver.addObserver()
         redrawer = createNativeRedrawer(this, renderApi).apply {
             syncBounds()
-            needRedraw()
+            needRender()
         }
     }
 
@@ -140,9 +152,15 @@ actual open class SkiaLayer {
     /**
      * Schedules a frame to an appropriate moment.
      */
-    actual fun needRedraw() {
-        redrawer?.needRedraw()
+    actual fun needRender(throttledToVsync: Boolean) {
+        redrawer?.needRender(throttledToVsync)
     }
+
+    @Deprecated(
+        message = "Use needRender() instead",
+        replaceWith = ReplaceWith("needRender()")
+    )
+    actual fun needRedraw() = needRender()
 
     /**
      * Updates the [picture] according to current [nanoTime]
@@ -154,8 +172,7 @@ actual open class SkiaLayer {
         val pictureWidth = (width * contentScale).coerceAtLeast(0.0)
         val pictureHeight = (height * contentScale).coerceAtLeast(0.0)
 
-        val bounds = Rect.makeWH(pictureWidth.toFloat(), pictureHeight.toFloat())
-        val canvas = pictureRecorder.beginRecording(bounds)
+        val canvas = pictureRecorder.beginRecording(0f, 0f, pictureWidth.toFloat(), pictureHeight.toFloat())
         renderDelegate?.onRender(canvas, pictureWidth.toInt(), pictureHeight.toInt(), nanoTime)
 
         val picture = pictureRecorder.finishRecordingAsPicture()

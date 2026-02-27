@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 class RenderNodeTest {
     @Test
     fun verifyInterop() {
-        val surface = Surface.Companion.makeRasterN32Premul(16, 16)
+        val surface = Surface.makeRasterN32Premul(16, 16)
         val context = RenderNodeContext()
         val node = RenderNode(context)
 
@@ -60,8 +60,8 @@ class RenderNodeTest {
         node.cameraDistance = 12f
         assertCloseEnough(12f, node.cameraDistance)
 
-        node.setClipRect(Rect(0f, 0f, 16f, 16f))
-        node.setClipRRect(RRect.makeLTRB(0f, 0f, 16f, 16f, 1f))
+        node.setClipRect(0f, 0f, 16f, 16f)
+        node.setClipRRect(0f, 0f, 16f, 16f, floatArrayOf(1f))
         node.setClipPath(Path())
         node.setClipPath(null)
 
@@ -69,12 +69,35 @@ class RenderNodeTest {
         assertTrue(node.clip)
 
         val recordCanvas = node.beginRecording()
-        recordCanvas.drawRect(Rect(0f,0f,16f,16f), Paint().apply { color = Color.BLACK })
+        recordCanvas.drawRect(0f,0f,16f,16f, Paint().apply { color = Color.BLACK })
         node.endRecording()
 
         node.drawInto(surface.canvas)
 
         surface.close()
+        node.close()
+        context.close()
+    }
+
+    @Test
+    fun pictureCullRect() {
+        val context = RenderNodeContext(measureDrawBounds = true)
+        val node = RenderNode(context)
+        node.bounds = Rect(0f, 0f, 100f, 100f)
+
+        val recordCanvas = node.beginRecording()
+        recordCanvas.drawRect(20f,20f,40f,40f, Paint())
+        node.endRecording()
+
+        val pictureRecorder = PictureRecorder()
+        val bbhFactory = RTreeFactory()
+        val pictureCanvas = pictureRecorder.beginRecording(0f, 0f, 100f, 100f, bbhFactory)
+        node.drawInto(pictureCanvas)
+        val picture = pictureRecorder.finishRecordingAsPicture()
+
+        assertEquals(Rect(20f, 20f, 40f, 40f), picture.cullRect)
+
+        picture.close()
         node.close()
         context.close()
     }

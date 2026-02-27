@@ -50,7 +50,7 @@ class SurfaceTest {
             assertEquals(200, newSurface2.width)
             assertEquals(400, newSurface2.height)
 
-            val image = surface.makeImageSnapshot(IRect(0, 0, 20, 30))!!
+            val image = surface.makeImageSnapshot(0, 0, 20, 30)!!
             assertEquals(20, image.width)
             assertEquals(30, image.height)
 
@@ -111,15 +111,12 @@ class SurfaceTest {
 
     @Test
     fun canMakeRenderTarget() {
-        if (hostOs != OS.Linux || kotlinBackend != KotlinBackend.Native) {
-            // TODO implement for other platforms and render targets
-            return
-        }
-        if (hostArch == Arch.Arm64) {
-            // TODO implement and test EGL on arm64
-            return
-        }
+        if (!TestGlContext.isAvailable()) return
 
+        if (hostOs == OS.Linux && kotlinBackend == KotlinBackend.Native && hostArch == Arch.Arm64) {
+            // TODO: fix test on Linux arm64 using EGL
+            return
+        }
         val pixels = TestGlContext.run {
             DirectContext.makeGL().useContext { ctx ->
                 val imageInfo = ImageInfo.makeN32Premul(16, 16)
